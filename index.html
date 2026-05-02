@@ -4,257 +4,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LabStock Pro v12 - Respaldo Total</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <style>
-        :root {
-            --primary: #1e293b;
-            --accent: #22c55e;
-            --bg: #f8fafc;
-            --white: #ffffff;
-            --danger: #ef4444;
-            --info: #0ea5e9;
-            --google: #4285f4;
-        }
-
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg);
-            margin: 0;
-            padding: 10px;
-            color: var(--primary);
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: auto;
-            background: var(--white);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        .header-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .btn-system {
-            background: #e2e8f0;
-            color: var(--primary);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-        }
-
-        .config-panel {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 10px;
-            background: #f1f5f9;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-
-        select,
-        input {
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            font-size: 16px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        #video-container {
-            width: 100%;
-            position: relative;
-            display: none;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 4px solid var(--accent);
-            margin-bottom: 15px;
-            background: #000;
-        }
-
-        #video {
-            width: 100%;
-            display: block;
-        }
-
-        .scan-region {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%;
-            height: 160px;
-            border: 2px solid #22c55e;
-            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6);
-            pointer-events: none;
-        }
-
-        .btn-main {
-            width: 100%;
-            color: white;
-            padding: 18px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            margin-bottom: 10px;
-            background: var(--accent);
-        }
-
-        .btn-main.active {
-            background: var(--danger);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            margin-top: 15px;
-        }
-
-        th {
-            background: #f8fafc;
-            padding: 12px;
-            text-align: left;
-            border-bottom: 2px solid #e2e8f0;
-            color: #64748b;
-            font-size: 10px;
-        }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .cas-badge {
-            background: #dcfce7;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-weight: bold;
-            color: #166534;
-        }
-
-        .action-group {
-            display: flex;
-            gap: 5px;
-        }
-
-        .btn-retry {
-            background: var(--info);
-            color: white;
-            border: none;
-            padding: 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-        }
-
-        .btn-google {
-            background: var(--google);
-            color: white;
-            border: none;
-            padding: 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-        }
-
-        .editable-name {
-            cursor: pointer;
-            font-weight: bold;
-            text-decoration: underline dotted #cbd5e1;
-        }
-
-        /* Nuevo efecto de destello de pantalla completa */
-        .flash-capture {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .do-flash {
-            animation: flash-frame 0.3s ease-out;
-        }
-
-        @keyframes flash-frame {
-            0% {
-                opacity: 0.8;
+    <title>
+        <title>StockNow🧪</title>
+        <h1>StockNow <span style="font-size: 0.8rem; vertical-align: middle; color: var(--accent);">UMA</span></h1>
+        <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+        <style>
+            :root {
+                /* Colores Universidad de Málaga */
+                --primary: #003366;
+                /* Azul UMA */
+                --accent: #0093d1;
+                /* Azul claro UMA */
+                --bg: #f1f5f9;
+                --white: #ffffff;
+                --danger: #d91d1d;
+                /* Rojo para caducados */
+                --text: #1e293b;
             }
 
-            100% {
+            /* Título de la App */
+            header h1 {
+                font-family: 'Arial Black', sans-serif;
+                letter-spacing: -1px;
+            }
+
+            /* Icono cámara más grande */
+            #start-btn {
+                font-size: 2.5rem;
+                /* Aumentado */
+                padding: 20px;
+            }
+
+            /* Fecha caducada en rojo */
+            .caducado {
+                color: var(--danger);
+                font-weight: bold;
+            }
+
+            /* Quitar fondo al icono del planeta */
+            .btn-google {
+                background: none !important;
+                border: none !important;
+                font-size: 1.2rem;
+                box-shadow: none !important;
+            }
+
+            body {
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                background: var(--bg);
+                margin: 0;
+                padding: 10px;
+                color: var(--primary);
+            }
+
+            .container {
+                max-width: 1000px;
+                margin: auto;
+                background: var(--white);
+                padding: 20px;
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+
+            .header-actions {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            .btn-system {
+                background: #e2e8f0;
+                color: var(--primary);
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: bold;
+                cursor: pointer;
+                border: none;
+            }
+
+            .config-panel {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 10px;
+                background: #f1f5f9;
+                padding: 15px;
+                border-radius: 12px;
+                margin-bottom: 20px;
+            }
+
+            select,
+            input {
+                padding: 12px;
+                border-radius: 8px;
+                border: 1px solid #cbd5e1;
+                font-size: 16px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            #video-container {
+                width: 100%;
+                position: relative;
+                display: none;
+                border-radius: 12px;
+                overflow: hidden;
+                border: 4px solid var(--accent);
+                margin-bottom: 15px;
+                background: #000;
+            }
+
+            #video {
+                width: 100%;
+                display: block;
+            }
+
+            .scan-region {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 85%;
+                height: 160px;
+                border: 2px solid #22c55e;
+                box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6);
+                pointer-events: none;
+            }
+
+            .btn-main {
+                width: 100%;
+                color: white;
+                padding: 18px;
+                font-size: 16px;
+                font-weight: bold;
+                border-radius: 12px;
+                border: none;
+                cursor: pointer;
+                margin-bottom: 10px;
+                background: var(--accent);
+            }
+
+            .btn-main.active {
+                background: var(--danger);
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+                margin-top: 15px;
+            }
+
+            th {
+                background: #f8fafc;
+                padding: 12px;
+                text-align: left;
+                border-bottom: 2px solid #e2e8f0;
+                color: #64748b;
+                font-size: 10px;
+            }
+
+            td {
+                padding: 12px;
+                border-bottom: 1px solid #f1f5f9;
+            }
+
+            .cas-badge {
+                background: #dcfce7;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-family: monospace;
+                font-weight: bold;
+                color: #166534;
+            }
+
+            .action-group {
+                display: flex;
+                gap: 5px;
+            }
+
+            .btn-retry {
+                background: var(--info);
+                color: white;
+                border: none;
+                padding: 6px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 10px;
+            }
+
+            .btn-google {
+                background: var(--google);
+                color: white;
+                border: none;
+                padding: 6px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 10px;
+            }
+
+            .editable-name {
+                cursor: pointer;
+                font-weight: bold;
+                text-decoration: underline dotted #cbd5e1;
+            }
+
+            /* Nuevo efecto de destello de pantalla completa */
+            .flash-capture {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
                 opacity: 0;
+                pointer-events: none;
+                z-index: 10;
             }
-        }
 
-        /* Estilo para el buscador */
-        #buscador {
-            margin-top: 15px;
-            padding: 10px;
-            width: 100%;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            box-sizing: border-box;
-        }
+            .do-flash {
+                animation: flash-frame 0.3s ease-out;
+            }
 
-        /* Ventana Modal Profesional */
-        #modalEdicion {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
+            @keyframes flash-frame {
+                0% {
+                    opacity: 0.8;
+                }
 
-        .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 450px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+                100% {
+                    opacity: 0;
+                }
+            }
 
-        .modal-content label {
-            display: block;
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #64748b;
-        }
+            /* Estilo para el buscador */
+            #buscador {
+                margin-top: 15px;
+                padding: 10px;
+                width: 100%;
+                border-radius: 8px;
+                border: 1px solid #cbd5e1;
+                box-sizing: border-box;
+            }
 
-        .modal-content select,
-        .modal-content input {
-            margin-bottom: 15px;
-        }
-    </style>
+            /* Ventana Modal Profesional */
+            #modalEdicion {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 2000;
+                align-items: center;
+                justify-content: center;
+            }
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+            .modal-content {
+                background: white;
+                padding: 25px;
+                border-radius: 15px;
+                width: 90%;
+                max-width: 450px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .modal-content label {
+                display: block;
+                font-size: 11px;
+                font-weight: bold;
+                margin-bottom: 5px;
+                color: #64748b;
+            }
+
+            .modal-content select,
+            .modal-content input {
+                margin-bottom: 15px;
+            }
+        </style>
+
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 </head>
 
@@ -267,8 +299,9 @@
         </div>
 
         <div class="config-panel">
-            <div>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
                 <label style="font-size: 10px; font-weight: bold; color: #64748b;">📍 UBICACIÓN</label>
+
                 <select id="selectUbicacion">
                     <option>Almacén Principal</option>
                     <option>Nevera</option>
@@ -457,16 +490,25 @@
         }
 
         function render() {
+            const ahora = new Date();
+            const mesActual = ahora.getMonth() + 1;
+            const anioActual = ahora.getFullYear();
+
             const tbody = document.getElementById('cuerpoTabla');
-            tbody.innerHTML = inventario.map(r => `
+            tbody.innerHTML = inventario.map(r => {
+                // Lógica de alerta de caducidad
+                const esCaducado = (parseInt(r.cad_anio) < anioActual) ||
+                    (parseInt(r.cad_anio) === anioActual && parseInt(r.cad_mes) < mesActual);
+
+                return `
             <tr>
                 <td><span class="editable-name" onclick="editarNombre(${r.id})">${r.nombre}</span></td>
                 <td><span class="cas-badge">${r.cas}</span></td>
                 <td>
                     <div class="action-group">
                         ${r.fallido ? `<button class="btn-retry" onclick="procesarNuevoReactivo('${r.cas}', true)">🔄</button>` : '✅'}
-                        <button class="btn-google" onclick="window.open('https://www.google.com/search?q=CAS+${r.cas}+SDS+nombre+quimico','_blank')">🌍</button>
-                        <button class="btn-system" style="padding: 4px 8px;" onclick="editarCompleto(${r.id})">📝</button>
+                        <button class="btn-google" onclick="window.open('https://www.google.com/search?q=CAS+${r.cas}+hoja+seguridad+español','_blank')">🌍</button>
+                        <button class="btn-system" style="padding: 4px 8px;" onclick="editarCompleto(${r.id})">✏️</button>
                     </div>
                 </td>
                 <td>
@@ -479,7 +521,7 @@
                 </td>
                 <td><button onclick="borrar(${r.id})" style="border:none;background:none;color:red;cursor:pointer">✕</button></td>
             </tr>
-            `).join('');
+            `}).join('');
         }
 
         function editarNombre(id) {
