@@ -453,6 +453,36 @@
             return res.toUpperCase();
         }
 
+        // Nueva función para obtener datos automáticos de PubChem
+        async function obtenerDatosQuimicos(cas) {
+            try {
+                // 1. Buscamos el CID (ID único) a través del CAS
+                const resCID = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${cas}/cids/JSON`);
+                const dataCID = await resCID.json();
+
+                if (!dataCID.IdentifierList) return { nombre: "NO ENCONTRADO", ficha: "" };
+                const cid = dataCID.IdentifierList.CID[0];
+
+                // 2. Buscamos el nombre (intentando que sea en español de la lista de sinónimos)
+                const resName = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`);
+                const dataName = await resName.json();
+
+                let nombreFinal = cas;
+                if (dataName.InformationList && dataName.InformationList.Information[0].Synonym) {
+                    // Tomamos el primer nombre de la lista (suele ser el estándar)
+                    nombreFinal = dataName.InformationList.Information[0].Synonym[0];
+                }
+
+                // 3. Generamos la URL automática de la sección de seguridad
+                const urlFicha = `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}#section=Safety-and-Hazards`;
+
+                return { nombre: nombreFinal.toUpperCase(), ficha: urlFicha };
+            } catch (e) {
+                return { nombre: "ERROR DE CONEXIÓN", ficha: "" };
+            }
+        }
+
+        // Nueva versión de procesarNuevoReactivo
         async function procesarNuevoReactivo(cas, reintento = false) {
             let item;
             if (!reintento) {
@@ -463,10 +493,11 @@
                     ubicacion: document.getElementById('selectUbicacion').value,
                     fallido: false,
                     cantidad: "1",
-                    unidad: "ud", // Nuevo: separamos cantidad de unidad
-                    cad_mes: "01", // Nuevo: separamos mes de año
+                    unidad: "ud",
+                    cad_mes: "01",
                     cad_anio: "2026",
-                    observaciones: "" // Nuevo campo
+                    observaciones: "",
+                    ficha_url: "" // Nuevo campo para la ficha automática
                 };
                 inventario.unshift(item);
             } else {
@@ -476,27 +507,13 @@
             }
             render();
 
-            const endpoints = ['compound', 'substance'];
-            let encontrado = false;
+            const datos = await obtenerDatosQuimicos(cas);
+            item.nombre = datos.nombre;
+            item.ficha_url = datos.ficha;
+            item.fallido = datos.nombre === "NO ENCONTRADO";
 
-            for (let end of endpoints) {
-                try {
-                    const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/${end}/name/${cas}/JSON`);
-                    const data = await res.json();
-                    const entidad = data.PC_Compounds ? data.PC_Compounds[0] : (data.PC_Substances ? data.PC_Substances[0] : null);
-                    if (entidad) {
-                        const prop = entidad.props.find(p => p.urn.label === 'IUPAC Name' || p.urn.label === 'Label');
-                        item.nombre = traducir(prop ? prop.value.sval : cas);
-                        encontrado = true; break;
-                    }
-                } catch (e) { }
-            }
-
-            if (!encontrado) {
-                item.nombre = "NO ENCONTRADO";
-                item.fallido = true;
-            }
-            actualizarStorage(); render();
+            actualizarStorage();
+            render();
         }
 
         function render() {
@@ -527,7 +544,14 @@
                 <td>
                     <div class="action-group">
                         ${r.fallido ? `<button class="btn-retry" onclick="procesarNuevoReactivo('${r.cas}', true)">🔄</button>` : '✅'}
+                        
                         <button class="btn-google" onclick="window.open('https://www.google.com/search?q=CAS+${r.cas}+hoja+seguridad+español','_blank')">🌍</button>
+                        
+                        ${r.ficha_url ?
+                        `<button class="btn-system" title="Ficha de Seguridad" style="background:#f8fafc; border:1px solid var(--accent);" onclick="window.open('${r.ficha_url}','_blank')">🛡️</button>`
+                        : ''
+                    }
+                        
                         <button class="btn-system" onclick="editarCompleto(${r.id})">✏️</button>
                     </div>
                 </td>
@@ -553,17 +577,11 @@
         }
 
         function exportarCSV() {
-            // 1. Cabeceras claras con BOM para que Excel reconozca tildes y caracteres españoles
-            let csv = "\uFEFFNombre del Producto,CAS,Ubicación,Cantidad,Unidad,Fecha Caducidad,Observaciones\n";
-
-            // 2. Formateo de cada fila
+            let csv = "\uFEFFNombre del Producto,CAS,Ubicación,Cantidad,Unidad,Fecha Caducidad,Ficha Seguridad,Observaciones\n";
             inventario.forEach(r => {
-                // Limpiamos las observaciones para que no rompan el CSV si tienen saltos de línea
                 const obs = (r.observaciones || "").replace(/\n/g, " ");
-                const caducidad = `${r.cad_mes}/${r.cad_anio}`;
-
-                // Usamos comillas dobles para que las comas internas no separen columnas por error
-                csv += `"${r.nombre}","${r.cas}","${r.ubicacion}","${r.cantidad}","${r.unidad}","${caducidad}","${obs}"\n`;
+                const ficha = r.ficha_url || "No disponible";
+                csv += `"${r.nombre}","${r.cas}","${r.ubicacion}","${r.cantidad}","${r.unidad}","${r.cad_mes}/${r.cad_anio}","${ficha}","${obs}"\n`;
             });
 
             // 3. Generar nombre de archivo con fecha y hora actual
@@ -595,18 +613,17 @@
             if (!r) return;
             editandoId = id;
 
-            // Cargar datos actuales
             document.getElementById('editNombre').value = r.nombre;
             document.getElementById('editCant').value = r.cantidad || "1";
             document.getElementById('editUnidad').value = r.unidad || "ud";
             document.getElementById('editObs').value = r.observaciones || "";
+            // CARGAR LA FICHA
+            document.getElementById('editFicha').value = r.ficha_url || "";
 
-            // Sincronizar ubicaciones disponibles
             const ubiSelect = document.getElementById('editUbicacion');
             ubiSelect.innerHTML = document.getElementById('selectUbicacion').innerHTML;
             ubiSelect.value = r.ubicacion;
 
-            // Generar lista de años (actual + 15)
             const anioSelect = document.getElementById('editAnio');
             anioSelect.innerHTML = "";
             const anioActual = new Date().getFullYear();
@@ -618,7 +635,6 @@
             document.getElementById('editMes').value = r.cad_mes || "01";
             document.getElementById('editAnio').value = r.cad_anio || anioActual;
 
-            // Mostrar Modal
             document.getElementById('modalEdicion').style.display = 'flex';
             document.getElementById('btnGuardarModal').onclick = guardarCambiosModal;
         }
@@ -636,13 +652,14 @@
             r.cad_mes = document.getElementById('editMes').value;
             r.cad_anio = document.getElementById('editAnio').value;
             r.observaciones = document.getElementById('editObs').value;
+            // GUARDAR LA FICHA
+            r.ficha_url = document.getElementById('editFicha').value;
             r.fallido = false;
 
             actualizarStorage();
             render();
             document.getElementById('modalEdicion').style.display = 'none';
         }
-        render();
 
         let ordenAscendente = true;
 
@@ -677,62 +694,6 @@
 
     </script>
 
-    <div id="modalEdicion"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
-        <div
-            style="background:white; padding:20px; border-radius:15px; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-            <h3 style="margin-top:0;">Editar Producto</h3>
-
-            <label style="font-size:11px; font-weight:bold;">Nombre:</label>
-            <input type="text" id="editNombre" style="margin-bottom:10px;">
-
-            <label style="font-size:11px; font-weight:bold;">Ubicación:</label>
-            <select id="editUbicacion" style="margin-bottom:10px;"></select>
-
-            <label style="font-size:11px; font-weight:bold;">Cantidad:</label>
-            <div style="display:flex; gap:5px; margin-bottom:10px;">
-                <input type="number" id="editCant" style="flex:2;">
-                <select id="editUnidad" style="flex:1;">
-                    <option value="mg">mg</option>
-                    <option value="g">g</option>
-                    <option value="kg">kg</option>
-                    <option value="mL">mL</option>
-                    <option value="L">L</option>
-                    <option value="ud">unidad</option>
-                </select>
-            </div>
-
-            <label style="font-size:11px; font-weight:bold;">Caducidad:</label>
-            <div style="display:flex; gap:5px; margin-bottom:10px;">
-                <select id="editMes">
-                    <option value="01">Ene</option>
-                    <option value="02">Feb</option>
-                    <option value="03">Mar</option>
-                    <option value="04">Abr</option>
-                    <option value="05">May</option>
-                    <option value="06">Jun</option>
-                    <option value="07">Jul</option>
-                    <option value="08">Ago</option>
-                    <option value="09">Sep</option>
-                    <option value="10">Oct</option>
-                    <option value="11">Nov</option>
-                    <option value="12">Dic</option>
-                </select>
-                <select id="editAnio"></select>
-            </div>
-
-            <label style="font-size:11px; font-weight:bold;">Observaciones:</label>
-            <input type="text" id="editObs" style="margin-bottom:15px;" placeholder="Notas adicionales...">
-
-            <div style="display:flex; gap:10px;">
-                <button onclick="cerrarModal()"
-                    style="flex:1; padding:10px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">Cancelar</button>
-                <button id="btnGuardarModal"
-                    style="flex:1; padding:10px; border-radius:8px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold;">Guardar</button>
-            </div>
-        </div>
-    </div>
-
     <div id="modalEdicion">
         <div class="modal-content">
             <h3>📝 Editar Registro</h3>
@@ -760,20 +721,13 @@
             <div style="display:flex; gap:10px;">
                 <select id="editMes">
                     <option value="01">Ene</option>
-                    <option value="02">Feb</option>
-                    <option value="03">Mar</option>
-                    <option value="04">Abr</option>
-                    <option value="05">May</option>
-                    <option value="06">Jun</option>
-                    <option value="07">Jul</option>
-                    <option value="08">Ago</option>
-                    <option value="09">Sep</option>
-                    <option value="10">Oct</option>
-                    <option value="11">Nov</option>
                     <option value="12">Dic</option>
                 </select>
                 <select id="editAnio"></select>
             </div>
+
+            <label>Enlace Ficha de Seguridad (URL):</label>
+            <input type="url" id="editFicha" placeholder="https://pubchem.ncbi.nlm.nih.gov/...">
 
             <label>Observaciones:</label>
             <textarea id="editObs"
@@ -788,7 +742,6 @@
             </div>
         </div>
     </div>
-
 
 </body>
 
