@@ -214,6 +214,43 @@
             border: 1px solid #cbd5e1;
             box-sizing: border-box;
         }
+
+        /* Ventana Modal Profesional */
+        #modalEdicion {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content label {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #64748b;
+        }
+
+        .modal-content select,
+        .modal-content input {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
@@ -468,18 +505,18 @@
             if (!r) return;
             editandoId = id;
 
-            // Rellenar Nombre, Cantidad y Observaciones
+            // Cargar datos actuales
             document.getElementById('editNombre').value = r.nombre;
             document.getElementById('editCant').value = r.cantidad || "1";
             document.getElementById('editUnidad').value = r.unidad || "ud";
             document.getElementById('editObs').value = r.observaciones || "";
 
-            // Sincronizar desplegable de ubicación
+            // Sincronizar ubicaciones disponibles
             const ubiSelect = document.getElementById('editUbicacion');
             ubiSelect.innerHTML = document.getElementById('selectUbicacion').innerHTML;
             ubiSelect.value = r.ubicacion;
 
-            // Generar años (del actual hasta 10 años más)
+            // Generar lista de años (actual + 15)
             const anioSelect = document.getElementById('editAnio');
             anioSelect.innerHTML = "";
             const anioActual = new Date().getFullYear();
@@ -491,10 +528,8 @@
             document.getElementById('editMes').value = r.cad_mes || "01";
             document.getElementById('editAnio').value = r.cad_anio || anioActual;
 
-            // Mostrar ventana
+            // Mostrar Modal
             document.getElementById('modalEdicion').style.display = 'flex';
-
-            // Configurar el botón guardar
             document.getElementById('btnGuardarModal').onclick = guardarCambiosModal;
         }
 
@@ -515,7 +550,7 @@
 
             actualizarStorage();
             render();
-            cerrarModal();
+            document.getElementById('modalEdicion').style.display = 'none';
         }
         render();
 
@@ -598,6 +633,61 @@
         </div>
     </div>
 
+    <div id="modalEdicion">
+        <div class="modal-content">
+            <h3>📝 Editar Registro</h3>
+
+            <label>Nombre del Producto:</label>
+            <input type="text" id="editNombre">
+
+            <label>Ubicación:</label>
+            <select id="editUbicacion"></select>
+
+            <label>Cantidad y Unidad:</label>
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="editCant" step="any">
+                <select id="editUnidad">
+                    <option value="mg">mg</option>
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="mL">mL</option>
+                    <option value="L">L</option>
+                    <option value="ud">unidad</option>
+                </select>
+            </div>
+
+            <label>Fecha de Caducidad:</label>
+            <div style="display:flex; gap:10px;">
+                <select id="editMes">
+                    <option value="01">Ene</option>
+                    <option value="02">Feb</option>
+                    <option value="03">Mar</option>
+                    <option value="04">Abr</option>
+                    <option value="05">May</option>
+                    <option value="06">Jun</option>
+                    <option value="07">Jul</option>
+                    <option value="08">Ago</option>
+                    <option value="09">Sep</option>
+                    <option value="10">Oct</option>
+                    <option value="11">Nov</option>
+                    <option value="12">Dic</option>
+                </select>
+                <select id="editAnio"></select>
+            </div>
+
+            <label>Observaciones:</label>
+            <textarea id="editObs"
+                style="width:100%; height:60px; border-radius:8px; border:1px solid #cbd5e1; padding:10px;"></textarea>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="document.getElementById('modalEdicion').style.display='none'"
+                    style="flex:1; padding:12px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">Cancelar</button>
+                <button id="btnGuardarModal"
+                    style="flex:1; padding:12px; border-radius:8px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold;">Guardar
+                    Cambios</button>
+            </div>
+        </div>
+    </div>
 
 
 </body>
