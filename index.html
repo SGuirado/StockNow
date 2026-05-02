@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LabStock Pro v12 - Respaldo Total</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #22c55e;
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --danger: #ef4444;
+            --info: #0ea5e9;
+            --google: #4285f4;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 10px;
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: var(--white);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-system {
+            background: #e2e8f0;
+            color: var(--primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+
+        .config-panel {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        select,
+        input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #video-container {
+            width: 100%;
+            position: relative;
+            display: none;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 4px solid var(--accent);
+            margin-bottom: 15px;
+            background: #000;
+        }
+
+        #video {
+            width: 100%;
+            display: block;
+        }
+
+        .scan-region {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 160px;
+            border: 2px solid #22c55e;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+        }
+
+        .btn-main {
+            width: 100%;
+            color: white;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 10px;
+            background: var(--accent);
+        }
+
+        .btn-main.active {
+            background: var(--danger);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            color: #64748b;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .cas-badge {
+            background: #dcfce7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #166534;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-retry {
+            background: var(--info);
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .btn-google {
+            background: var(--google);
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .editable-name {
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: underline dotted #cbd5e1;
+        }
+
+        /* Nuevo efecto de destello de pantalla completa */
+        .flash-capture {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .do-flash {
+            animation: flash-frame 0.3s ease-out;
+        }
+
+        @keyframes flash-frame {
+            0% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* Estilo para el buscador */
+        #buscador {
+            margin-top: 15px;
+            padding: 10px;
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header-actions">
+            <h2>LabStock Pro v12 🧪</h2>
+            <button class="btn-system" onclick="exportarCSV()">💾 EXPORTAR</button>
+        </div>
+
+        <div class="config-panel">
+            <div>
+                <label style="font-size: 10px; font-weight: bold; color: #64748b;">📍 UBICACIÓN</label>
+                <select id="selectUbicacion">
+                    <option>Almacén Principal</option>
+                    <option>Nevera</option>
+                    <option>Armario Seguridad</option>
+                </select>
+            </div>
+            <button onclick="nuevaUbicacion()" class="btn-system" style="height: 48px;">+ NUEVA</button>
+        </div>
+
+        <button id="btn-toggle" class="btn-main" onclick="toggleScanner()">📷 ESCANEAR CAS</button>
+
+        <div id="video-container">
+            <video id="video" autoplay playsinline></video>
+            <div class="scan-region"></div>
+            <div id="status" style="background:#000; color:#fff; text-align:center; font-size:11px; padding:5px;">Alinee
+                el código</div>
+        </div>
+
+        <canvas id="canvas-proc" style="display:none;"></canvas>
+        <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o CAS..." onkeyup="filtrarTabla()">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="ordenarPor('nombre')" style="cursor:pointer">Producto ↕️</th>
+                        <th onclick="ordenarPor('cas')" style="cursor:pointer">CAS ↕️</th>
+                        <th>Info</th>
+                        <th onclick="ordenarPor('ubicacion')" style="cursor:pointer">Ubicación / Cant / Cad ↕️</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let inventario = JSON.parse(localStorage.getItem('lab_inv_v5')) || [];
+        let isScanning = false;
+        let videoStream = null;
+        let worker = null;
+        let isProcessing = false;
+
+        function nuevaUbicacion() {
+            const n = prompt("Nombre de la ubicación:");
+            if (n) {
+                const s = document.getElementById('selectUbicacion');
+                const o = document.createElement('option');
+                o.text = n; s.add(o); s.value = n;
+            }
+        }
+
+        async function toggleScanner() {
+            const btn = document.getElementById('btn-toggle');
+            if (!isScanning) {
+                try {
+                    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    document.getElementById('video').srcObject = videoStream;
+                    document.getElementById('video-container').style.display = 'block';
+                    btn.innerText = "⏹️ DETENER"; btn.classList.add('active');
+                    isScanning = true;
+                    if (!worker) worker = await Tesseract.createWorker('eng');
+                    cicloEscaneo();
+                } catch (e) { alert("Error de cámara"); }
+            } else { detenerEscaneo(); }
+        }
+
+        function detenerEscaneo() {
+            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+            document.getElementById('video-container').style.display = 'none';
+            document.getElementById('btn-toggle').innerText = "📷 ESCANEAR CAS";
+            document.getElementById('btn-toggle').classList.remove('active');
+            isScanning = false;
+        }
+
+        async function cicloEscaneo() {
+            if (!isScanning || isProcessing) { requestAnimationFrame(cicloEscaneo); return; }
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas-proc');
+            const ctx = canvas.getContext('2d');
+            const scale = video.videoWidth / video.clientWidth;
+            canvas.width = video.videoWidth * 0.9;
+            canvas.height = 180 * scale;
+            ctx.filter = 'contrast(1.6) grayscale(1)';
+            ctx.drawImage(video, (video.videoWidth - canvas.width) / 2, (video.videoHeight - canvas.height) / 2, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+
+            try {
+                const { data: { text } } = await worker.recognize(canvas);
+                const match = text.match(/(\d{2,7}-\d{2}-\d)/);
+                if (match) {
+                    const cas = match[1].trim();
+                    if (!inventario.length || inventario[0].cas !== cas) {
+                        isProcessing = true;
+
+                        // EFECTO VISUAL DE DESTELLO
+                        let flashDiv = document.getElementById('flash-effect');
+                        if (!flashDiv) {
+                            flashDiv = document.createElement('div');
+                            flashDiv.id = 'flash-effect';
+                            flashDiv.className = 'flash-capture';
+                            document.getElementById('video-container').appendChild(flashDiv);
+                        }
+                        flashDiv.classList.add('do-flash');
+                        setTimeout(() => flashDiv.classList.remove('do-flash'), 300);
+
+                        if (navigator.vibrate) navigator.vibrate(100);
+                        await procesarNuevoReactivo(cas);
+                        setTimeout(() => { isProcessing = false; }, 3000);
+                    }
+                }
+            } catch (e) { }
+            if (isScanning) requestAnimationFrame(cicloEscaneo);
+        }
+
+        const diccionario = {
+            'acid': 'Ácido', 'sodium': 'Sodio', 'chloride': 'Cloruro', 'sulfate': 'Sulfato', 'nitrate': 'Nitrato',
+            'potassium': 'Potasio', 'silver': 'Plata', 'oxide': 'Óxido', 'ethanol': 'Etanol', 'hydrate': 'Hidratado',
+            'iron': 'Hierro', 'copper': 'Cobre', 'magnesium': 'Magnesio', 'zinc': 'Zinc', 'calcium': 'Calcio'
+        };
+
+        function traducir(txt) {
+            if (!txt) return "SIN NOMBRE";
+            let res = txt.toLowerCase();
+            Object.keys(diccionario).forEach(k => res = res.replace(new RegExp('\\b' + k + '\\b', 'g'), diccionario[k]));
+            return res.toUpperCase();
+        }
+
+        async function procesarNuevoReactivo(cas, reintento = false) {
+            let item;
+            if (!reintento) {
+                item = {
+                    id: Date.now(),
+                    nombre: "BUSCANDO...",
+                    cas: cas,
+                    ubicacion: document.getElementById('selectUbicacion').value,
+                    fallido: false,
+                    cantidad: "1",
+                    unidad: "ud", // Nuevo: separamos cantidad de unidad
+                    cad_mes: "01", // Nuevo: separamos mes de año
+                    cad_anio: "2026",
+                    observaciones: "" // Nuevo campo
+                };
+                inventario.unshift(item);
+            } else {
+                item = inventario.find(x => x.cas === cas);
+                item.nombre = "REINTENTANDO...";
+                item.fallido = false;
+            }
+            render();
+
+            const endpoints = ['compound', 'substance'];
+            let encontrado = false;
+
+            for (let end of endpoints) {
+                try {
+                    const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/${end}/name/${cas}/JSON`);
+                    const data = await res.json();
+                    const entidad = data.PC_Compounds ? data.PC_Compounds[0] : (data.PC_Substances ? data.PC_Substances[0] : null);
+                    if (entidad) {
+                        const prop = entidad.props.find(p => p.urn.label === 'IUPAC Name' || p.urn.label === 'Label');
+                        item.nombre = traducir(prop ? prop.value.sval : cas);
+                        encontrado = true; break;
+                    }
+                } catch (e) { }
+            }
+
+            if (!encontrado) {
+                item.nombre = "NO ENCONTRADO";
+                item.fallido = true;
+            }
+            actualizarStorage(); render();
+        }
+
+        function render() {
+            const tbody = document.getElementById('cuerpoTabla');
+            tbody.innerHTML = inventario.map(r => `
+            <tr>
+                <td><span class="editable-name" onclick="editarNombre(${r.id})">${r.nombre}</span></td>
+                <td><span class="cas-badge">${r.cas}</span></td>
+                <td>
+                    <div class="action-group">
+                        ${r.fallido ? `<button class="btn-retry" onclick="procesarNuevoReactivo('${r.cas}', true)">🔄</button>` : '✅'}
+                        <button class="btn-google" onclick="window.open('https://www.google.com/search?q=CAS+${r.cas}+SDS+nombre+quimico','_blank')">🌍</button>
+                        <button class="btn-system" style="padding: 4px 8px;" onclick="editarCompleto(${r.id})">📝</button>
+                    </div>
+                </td>
+                <td>
+                    <small>
+                        📍 ${r.ubicacion}<br>
+                        📦 ${r.cantidad} ${r.unidad}<br>
+                        📅 Exp: ${r.cad_mes}/${r.cad_anio}<br>
+                        📝 ${r.observaciones || ''}
+                    </small>
+                </td>
+                <td><button onclick="borrar(${r.id})" style="border:none;background:none;color:red;cursor:pointer">✕</button></td>
+            </tr>
+            `).join('');
+        }
+
+        function editarNombre(id) {
+            const r = inventario.find(x => x.id === id);
+            const n = prompt("Nombre del reactivo:", r.nombre.includes("NO ENCONTRADO") ? "" : r.nombre);
+            if (n) { r.nombre = n.toUpperCase(); r.fallido = false; actualizarStorage(); render(); }
+        }
+
+        function borrar(id) {
+            if (confirm("¿Eliminar?")) { inventario = inventario.filter(x => x.id !== id); actualizarStorage(); render(); }
+        }
+
+        function actualizarStorage() { localStorage.setItem('lab_inv_v5', JSON.stringify(inventario)); }
+
+        function exportarCSV() {
+            let csv = "\uFEFFNombre,CAS,Ubicacion,Cantidad,Unidad,Caducidad,Observaciones\n";
+            inventario.forEach(r => {
+                csv += `"${r.nombre}","${r.cas}","${r.ubicacion}","${r.cantidad}","${r.unidad}","${r.cad_mes}/${r.cad_anio}","${r.observaciones || ''}"\n`;
+            });
+
+            // 3. GENERAMOS LA FECHA Y HORA PARA EL NOMBRE
+            const ahora = new Date();
+            const fecha = ahora.toISOString().split('T')[0]; // Ejemplo: 2023-10-27
+            const hora = ahora.getHours().toString().padStart(2, '0') + "-" +
+                ahora.getMinutes().toString().padStart(2, '0'); // Ejemplo: 14-30
+
+            const nombreArchivo = `inventario_${fecha}_${hora}.csv`;
+
+            // 4. Creamos el archivo para descargar
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = nombreArchivo; // Aquí usamos el nombre con fecha y hora
+            link.click();
+        }
+
+        let editandoId = null;
+
+        function editarCompleto(id) {
+            const r = inventario.find(x => x.id === id);
+            if (!r) return;
+            editandoId = id;
+
+            // Rellenar Nombre, Cantidad y Observaciones
+            document.getElementById('editNombre').value = r.nombre;
+            document.getElementById('editCant').value = r.cantidad || "1";
+            document.getElementById('editUnidad').value = r.unidad || "ud";
+            document.getElementById('editObs').value = r.observaciones || "";
+
+            // Sincronizar desplegable de ubicación
+            const ubiSelect = document.getElementById('editUbicacion');
+            ubiSelect.innerHTML = document.getElementById('selectUbicacion').innerHTML;
+            ubiSelect.value = r.ubicacion;
+
+            // Generar años (del actual hasta 10 años más)
+            const anioSelect = document.getElementById('editAnio');
+            anioSelect.innerHTML = "";
+            const anioActual = new Date().getFullYear();
+            for (let i = 0; i < 15; i++) {
+                let opt = document.createElement('option');
+                opt.value = anioActual + i; opt.text = anioActual + i;
+                anioSelect.add(opt);
+            }
+            document.getElementById('editMes').value = r.cad_mes || "01";
+            document.getElementById('editAnio').value = r.cad_anio || anioActual;
+
+            // Mostrar ventana
+            document.getElementById('modalEdicion').style.display = 'flex';
+
+            // Configurar el botón guardar
+            document.getElementById('btnGuardarModal').onclick = guardarCambiosModal;
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalEdicion').style.display = 'none';
+        }
+
+        function guardarCambiosModal() {
+            const r = inventario.find(x => x.id === editandoId);
+            r.nombre = document.getElementById('editNombre').value.toUpperCase();
+            r.ubicacion = document.getElementById('editUbicacion').value;
+            r.cantidad = document.getElementById('editCant').value;
+            r.unidad = document.getElementById('editUnidad').value;
+            r.cad_mes = document.getElementById('editMes').value;
+            r.cad_anio = document.getElementById('editAnio').value;
+            r.observaciones = document.getElementById('editObs').value;
+            r.fallido = false;
+
+            actualizarStorage();
+            render();
+            cerrarModal();
+        }
+        render();
+
+        let ordenAscendente = true;
+
+        function filtrarTabla() {
+            const term = document.getElementById('buscador').value.toLowerCase();
+            const filas = document.querySelectorAll('#cuerpoTabla tr');
+            filas.forEach(fila => {
+                const texto = fila.innerText.toLowerCase();
+                fila.style.display = texto.includes(term) ? '' : 'none';
+            });
+        }
+
+        function ordenarPor(campo) {
+            inventario.sort((a, b) => {
+                let valA = (a[campo] || "").toString().toLowerCase();
+                let valB = (b[campo] || "").toString().toLowerCase();
+                if (ordenAscendente) return valA > valB ? 1 : -1;
+                return valA < valB ? 1 : -1;
+            });
+            ordenAscendente = !ordenAscendente;
+            render();
+        }
+    </script>
+
+    <div id="modalEdicion"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:20px; border-radius:15px; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-top:0;">Editar Producto</h3>
+
+            <label style="font-size:11px; font-weight:bold;">Nombre:</label>
+            <input type="text" id="editNombre" style="margin-bottom:10px;">
+
+            <label style="font-size:11px; font-weight:bold;">Ubicación:</label>
+            <select id="editUbicacion" style="margin-bottom:10px;"></select>
+
+            <label style="font-size:11px; font-weight:bold;">Cantidad:</label>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input type="number" id="editCant" style="flex:2;">
+                <select id="editUnidad" style="flex:1;">
+                    <option value="mg">mg</option>
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="mL">mL</option>
+                    <option value="L">L</option>
+                    <option value="ud">unidad</option>
+                </select>
+            </div>
+
+            <label style="font-size:11px; font-weight:bold;">Caducidad:</label>
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <select id="editMes">
+                    <option value="01">Ene</option>
+                    <option value="02">Feb</option>
+                    <option value="03">Mar</option>
+                    <option value="04">Abr</option>
+                    <option value="05">May</option>
+                    <option value="06">Jun</option>
+                    <option value="07">Jul</option>
+                    <option value="08">Ago</option>
+                    <option value="09">Sep</option>
+                    <option value="10">Oct</option>
+                    <option value="11">Nov</option>
+                    <option value="12">Dic</option>
+                </select>
+                <select id="editAnio"></select>
+            </div>
+
+            <label style="font-size:11px; font-weight:bold;">Observaciones:</label>
+            <input type="text" id="editObs" style="margin-bottom:15px;" placeholder="Notas adicionales...">
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="cerrarModal()"
+                    style="flex:1; padding:10px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">Cancelar</button>
+                <button id="btnGuardarModal"
+                    style="flex:1; padding:10px; border-radius:8px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold;">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+
+</html>
