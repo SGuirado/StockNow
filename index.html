@@ -5,15 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>
-        <title>StockNow🧪</title>
-        <h1>StockNow <span style="font-size: 0.8rem; vertical-align: middle; color: var(--accent);">UMA</span></h1>
+        <title>StockNow</title>
         <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
         <style>
             :root {
                 /* Colores Universidad de Málaga */
                 --primary: #003366;
                 /* Azul UMA */
-                --accent: #0093d1;
+                --accent: #003366;
                 /* Azul claro UMA */
                 --bg: #f1f5f9;
                 --white: #ffffff;
@@ -170,6 +169,18 @@
                 border-bottom: 1px solid #f1f5f9;
             }
 
+            /* Aumentar tamaño de los encabezados de la tabla */
+            thead th {
+                font-size: 1.1rem;
+                /* Puedes subirlo a 1.2rem si lo quieres aún más grande */
+                padding: 15px 10px;
+                /* Añadimos un poco más de espacio para que luzca mejor */
+                color: var(--primary);
+                background-color: #f8fafc;
+                /* Un tono gris muy ligero para resaltar el área */
+            }
+
+
             .cas-badge {
                 background: #dcfce7;
                 padding: 4px 8px;
@@ -294,13 +305,13 @@
 
     <div class="container">
         <div class="header-actions">
-            <h2>LabStock Pro v12 🧪</h2>
+            <h2>StockNow 🧪</h2>
             <button class="btn-system" onclick="exportarCSV()">💾 EXPORTAR</button>
         </div>
 
         <div class="config-panel">
             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
-                <label style="font-size: 10px; font-weight: bold; color: #64748b;">📍 UBICACIÓN</label>
+                <label style="font-size: 12px; font-weight: bold; color: #64748b;">UBICACIÓN</label>
 
                 <select id="selectUbicacion">
                     <option>Almacén Principal</option>
@@ -326,10 +337,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th onclick="ordenarPor('nombre')" style="cursor:pointer">Producto ↕️</th>
-                        <th onclick="ordenarPor('cas')" style="cursor:pointer">CAS ↕️</th>
-                        <th>Info</th>
+                        <th onclick="ordenarPor('nombre')" style="cursor:pointer">Producto / CAS ↕️</th>
                         <th onclick="ordenarPor('ubicacion')" style="cursor:pointer">Ubicación / Cant / Cad ↕️</th>
+                        <th>Info</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -502,24 +512,26 @@
 
                 return `
             <tr>
-                <td><span class="editable-name" onclick="editarNombre(${r.id})">${r.nombre}</span></td>
-                <td><span class="cas-badge">${r.cas}</span></td>
                 <td>
-                    <div class="action-group">
-                        ${r.fallido ? `<button class="btn-retry" onclick="procesarNuevoReactivo('${r.cas}', true)">🔄</button>` : '✅'}
-                        <button class="btn-google" onclick="window.open('https://www.google.com/search?q=CAS+${r.cas}+hoja+seguridad+español','_blank')">🌍</button>
-                        <button class="btn-system" style="padding: 4px 8px;" onclick="editarCompleto(${r.id})">✏️</button>
-                    </div>
+                    <div style="font-weight: bold; color: var(--primary);">${r.nombre}</div>
+                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">CAS: ${r.cas}</div>
                 </td>
-                <td>
+                <td class="${esCaducado ? 'caducado' : ''}">
                     <small>
                         📍 ${r.ubicacion}<br>
                         📦 ${r.cantidad} ${r.unidad}<br>
                         📅 Exp: ${r.cad_mes}/${r.cad_anio}<br>
-                        📝 ${r.observaciones || ''}
+                        ${r.observaciones ? `📝 <i style="color:#666">${r.observaciones}</i>` : ''}
                     </small>
                 </td>
-                <td><button onclick="borrar(${r.id})" style="border:none;background:none;color:red;cursor:pointer">✕</button></td>
+                <td>
+                    <div class="action-group">
+                        ${r.fallido ? `<button class="btn-retry" onclick="procesarNuevoReactivo('${r.cas}', true)">🔄</button>` : '✅'}
+                        <button class="btn-google" onclick="window.open('https://www.google.com/search?q=CAS+${r.cas}+hoja+seguridad+español','_blank')">🌍</button>
+                        <button class="btn-system" onclick="editarCompleto(${r.id})">✏️</button>
+                    </div>
+                </td>
+                <td><button onclick="borrar(${r.id})" style="border:none;background:none;font-size:1.2rem;cursor:pointer">🗑️</button></td>
             </tr>
             `}).join('');
         }
@@ -541,25 +553,39 @@
         }
 
         function exportarCSV() {
-            let csv = "\uFEFFNombre,CAS,Ubicacion,Cantidad,Unidad,Caducidad,Observaciones\n";
+            // 1. Cabeceras claras con BOM para que Excel reconozca tildes y caracteres españoles
+            let csv = "\uFEFFNombre del Producto,CAS,Ubicación,Cantidad,Unidad,Fecha Caducidad,Observaciones\n";
+
+            // 2. Formateo de cada fila
             inventario.forEach(r => {
-                csv += `"${r.nombre}","${r.cas}","${r.ubicacion}","${r.cantidad}","${r.unidad}","${r.cad_mes}/${r.cad_anio}","${r.observaciones || ''}"\n`;
+                // Limpiamos las observaciones para que no rompan el CSV si tienen saltos de línea
+                const obs = (r.observaciones || "").replace(/\n/g, " ");
+                const caducidad = `${r.cad_mes}/${r.cad_anio}`;
+
+                // Usamos comillas dobles para que las comas internas no separen columnas por error
+                csv += `"${r.nombre}","${r.cas}","${r.ubicacion}","${r.cantidad}","${r.unidad}","${caducidad}","${obs}"\n`;
             });
 
-            // 3. GENERAMOS LA FECHA Y HORA PARA EL NOMBRE
+            // 3. Generar nombre de archivo con fecha y hora actual
             const ahora = new Date();
-            const fecha = ahora.toISOString().split('T')[0]; // Ejemplo: 2023-10-27
+            const isoFecha = ahora.toISOString().split('T')[0]; // YYYY-MM-DD
             const hora = ahora.getHours().toString().padStart(2, '0') + "-" +
-                ahora.getMinutes().toString().padStart(2, '0'); // Ejemplo: 14-30
+                ahora.getMinutes().toString().padStart(2, '0');
 
-            const nombreArchivo = `inventario_${fecha}_${hora}.csv`;
+            const nombreArchivo = `StockNow_${isoFecha}_${hora}.csv`;
 
-            // 4. Creamos el archivo para descargar
+            // 4. Proceso de descarga profesional
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = nombreArchivo; // Aquí usamos el nombre con fecha y hora
-            link.click();
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", nombreArchivo);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         }
 
         let editandoId = null;
