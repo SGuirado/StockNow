@@ -252,6 +252,10 @@
             margin-bottom: 15px;
         }
     </style>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
 </head>
 
 <body>
@@ -302,6 +306,20 @@
     </div>
 
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0EZkfX5PEaL9W9TLQH-B6WFukyQLOQQM",
+            authDomain: "stocknow-e39e7.firebaseapp.com",
+            databaseURL: "https://stocknow-e39e7-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stocknow-e39e7",
+            storageBucket: "stocknow-e39e7.firebasestorage.app",
+            messagingSenderId: "57942162718",
+            appId: "1:57942162718:web:06e809f8c9e8b3fe955d0f",
+            measurementId: "G-BFKJP91GE9"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+
         let inventario = JSON.parse(localStorage.getItem('lab_inv_v5')) || [];
         let isScanning = false;
         let videoStream = null;
@@ -474,7 +492,11 @@
             if (confirm("¿Eliminar?")) { inventario = inventario.filter(x => x.id !== id); actualizarStorage(); render(); }
         }
 
-        function actualizarStorage() { localStorage.setItem('lab_inv_v5', JSON.stringify(inventario)); }
+        function actualizarStorage() {
+            // Esto envía los datos a la nube al instante
+            db.ref('inventario').set(inventario);
+            localStorage.setItem('lab_inv_v5', JSON.stringify(inventario));
+        }
 
         function exportarCSV() {
             let csv = "\uFEFFNombre,CAS,Ubicacion,Cantidad,Unidad,Caducidad,Observaciones\n";
@@ -575,6 +597,16 @@
             ordenAscendente = !ordenAscendente;
             render();
         }
+
+        // Este código hace que la pantalla se actualice sola cuando el móvil envía algo
+        db.ref('inventario').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                inventario = data;
+                render();
+            }
+        });
+
     </script>
 
     <div id="modalEdicion"
