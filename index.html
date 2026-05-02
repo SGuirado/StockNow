@@ -498,8 +498,8 @@
                     cas: cas,
                     ubicacion: document.getElementById('selectUbicacion').value,
                     fallido: false,
-                    cantidad: "1",
-                    unidad: "ud",
+                    cantidad: "250",
+                    unidad: "g",
                     cad_mes: "01",
                     cad_anio: "2026",
                     observaciones: "",
@@ -541,9 +541,9 @@
                 </td>
                 <td class="${esCaducado ? 'caducado' : ''}">
                     <small>
-                        📍 ${r.ubicacion}<br>
-                        📦 ${r.cantidad} ${r.unidad}<br>
-                        📅 Exp: ${r.cad_mes}/${r.cad_anio}<br>
+                        📍 <b>${r.ubicacion}</b><br>
+                        📦 Stock: <b>${r.stock || 1}</b> botes de ${r.cantidad} ${r.unidad}<br>
+                        📅 Exp: ${r.cad_mes}/${r.cad_anio}
                         ${r.observaciones ? `📝 <i style="color:#666">${r.observaciones}</i>` : ''}
                     </small>
                 </td>
@@ -634,8 +634,12 @@
             editandoId = id;
 
             document.getElementById('editNombre').value = r.nombre;
-            document.getElementById('editCant').value = r.cantidad || "1";
-            document.getElementById('editUnidad').value = r.unidad || "ud";
+            document.getElementById('editCant').value = r.cantidad || "1"; // Ahora es Tamaño
+            document.getElementById('editUnidad').value = r.unidad || "g";
+
+            // CARGAR EL STOCK (Si no existe, ponemos 1 por defecto)
+            document.getElementById('editStock').value = r.stock || "1";
+
             document.getElementById('editObs').value = r.observaciones || "";
             // CARGAR LA FICHA
             document.getElementById('editFicha').value = r.ficha_url || "";
@@ -665,22 +669,22 @@
 
         async function guardarCambiosModal() {
             const r = inventario.find(x => x.id === editandoId);
-            const nuevoNombre = document.getElementById('editNombre').value.toUpperCase();
-            const nuevaFicha = document.getElementById('editFicha').value;
 
-            r.nombre = nuevoNombre;
+            r.nombre = document.getElementById('editNombre').value.toUpperCase();
             r.ubicacion = document.getElementById('editUbicacion').value;
-            r.cantidad = document.getElementById('editCant').value;
-            r.unidad = document.getElementById('editUnidad').value;
+
+            // Guardamos Tamaño y Stock por separado
+            r.cantidad = document.getElementById('editCant').value; // Tamaño numérico
+            r.unidad = document.getElementById('editUnidad').value;  // Unidad (mL, g, etc)
+            r.stock = document.getElementById('editStock').value;   // Cantidad de botes
+
             r.cad_mes = document.getElementById('editMes').value;
             r.cad_anio = document.getElementById('editAnio').value;
             r.observaciones = document.getElementById('editObs').value;
-            r.ficha_url = nuevaFicha;
-            r.fallido = false;
+            r.ficha_url = document.getElementById('editFicha').value;
 
-            // Si el nombre sigue siendo un código o está marcado como "NO ENCONTRADO",
-            // intentamos una última búsqueda automática antes de cerrar.
-            if (r.nombre.includes("NO ENCONTRADO") || r.nombre === r.cas) {
+            // Lógica de PubChem que ya tenías
+            if (r.nombre.includes("BUSCANDO") || r.nombre === r.cas) {
                 const datos = await obtenerDatosQuimicos(r.cas);
                 r.nombre = datos.nombre;
                 r.ficha_url = datos.ficha;
@@ -734,18 +738,20 @@
             <label>Ubicación:</label>
             <select id="editUbicacion"></select>
 
-            <label>Cantidad y Unidad:</label>
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="editCant" step="any">
+            <label>Tamaño (Capacidad del envase):</label>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input type="number" id="editCant" step="any" placeholder="Ej: 500">
                 <select id="editUnidad">
                     <option value="mg">mg</option>
                     <option value="g">g</option>
                     <option value="kg">kg</option>
                     <option value="mL">mL</option>
                     <option value="L">L</option>
-                    <option value="ud">unidad</option>
                 </select>
             </div>
+
+            <label>Stock (Número de botes/unidades):</label>
+            <input type="number" id="editStock" placeholder="¿Cuántos botes hay?" style="margin-bottom:15px;">
 
             <label>Fecha de Caducidad:</label>
             <div style="display:flex; gap:10px;">
