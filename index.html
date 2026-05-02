@@ -323,6 +323,12 @@
         </div>
 
         <button id="btn-toggle" class="btn-main" onclick="toggleScanner()">📷 ESCANEAR CAS</button>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <input type="text" id="inputCasManual" placeholder="Introducir CAS manualmente (ej: 64-17-5)"
+                style="flex: 1;">
+            <button onclick="agregarCasManual()" class="btn-system"
+                style="background: var(--accent); color: white; padding: 0 20px;">AÑADIR</button>
+        </div>
 
         <div id="video-container">
             <video id="video" autoplay playsinline></video>
@@ -478,7 +484,7 @@
 
                 return { nombre: nombreFinal.toUpperCase(), ficha: urlFicha };
             } catch (e) {
-                return { nombre: "ERROR DE CONEXIÓN", ficha: "" };
+                return { nombre: cas, ficha: "" };
             }
         }
 
@@ -576,6 +582,20 @@
             localStorage.setItem('lab_inv_v5', JSON.stringify(inventario));
         }
 
+        async function agregarCasManual() {
+            const input = document.getElementById('inputCasManual');
+            const cas = input.value.trim();
+
+            // Validar formato básico de CAS (números y guiones)
+            const casRegex = /^(\d{2,7}-\d{2}-\d)$/;
+            if (casRegex.test(cas)) {
+                input.value = ""; // Limpiar campo
+                await procesarNuevoReactivo(cas);
+            } else {
+                alert("Por favor, introduce un formato de CAS válido (ej: 67-64-1)");
+            }
+        }
+
         function exportarCSV() {
             let csv = "\uFEFFNombre del Producto,CAS,Ubicación,Cantidad,Unidad,Fecha Caducidad,Ficha Seguridad,Observaciones\n";
             inventario.forEach(r => {
@@ -643,18 +663,28 @@
             document.getElementById('modalEdicion').style.display = 'none';
         }
 
-        function guardarCambiosModal() {
+        async function guardarCambiosModal() {
             const r = inventario.find(x => x.id === editandoId);
-            r.nombre = document.getElementById('editNombre').value.toUpperCase();
+            const nuevoNombre = document.getElementById('editNombre').value.toUpperCase();
+            const nuevaFicha = document.getElementById('editFicha').value;
+
+            r.nombre = nuevoNombre;
             r.ubicacion = document.getElementById('editUbicacion').value;
             r.cantidad = document.getElementById('editCant').value;
             r.unidad = document.getElementById('editUnidad').value;
             r.cad_mes = document.getElementById('editMes').value;
             r.cad_anio = document.getElementById('editAnio').value;
             r.observaciones = document.getElementById('editObs').value;
-            // GUARDAR LA FICHA
-            r.ficha_url = document.getElementById('editFicha').value;
+            r.ficha_url = nuevaFicha;
             r.fallido = false;
+
+            // Si el nombre sigue siendo un código o está marcado como "NO ENCONTRADO",
+            // intentamos una última búsqueda automática antes de cerrar.
+            if (r.nombre.includes("NO ENCONTRADO") || r.nombre === r.cas) {
+                const datos = await obtenerDatosQuimicos(r.cas);
+                r.nombre = datos.nombre;
+                r.ficha_url = datos.ficha;
+            }
 
             actualizarStorage();
             render();
