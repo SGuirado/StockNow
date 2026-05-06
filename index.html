@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>
-        <title>StockNow</title>
+        <title>TraceReagents</title>
         <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
         <style>
             :root {
@@ -70,6 +70,58 @@
                 justify-content: space-between;
                 align-items: center;
                 margin-bottom: 20px;
+            }
+
+            .btn-login {
+                background: none;
+                /* Eliminamos el fondo para que sea más limpio */
+                border: none;
+                /* ELIMINADO EL MARCO */
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 10px 15px;
+                /* Más grande */
+                border-radius: 10px;
+                font-size: 15px;
+                /* Texto más grande */
+                color: var(--primary);
+                font-weight: bold;
+                transition: transform 0.2s;
+                /* Efecto suave al pulsar */
+            }
+
+            .btn-login img {
+                width: 45px;
+                /* Icono bastante más grande */
+                height: 45px;
+                margin-bottom: 4px;
+            }
+
+            /* Efecto visual al pasar el ratón para saber que es un botón */
+            .btn-login:hover {
+                transform: scale(1.05);
+                background: rgba(0, 51, 102, 0.05);
+                /* Un toque de color muy suave al pasar el ratón */
+            }
+
+
+            /* Estilo personalizado para el título principal */
+            .header-actions h2 {
+                font-family: 'Segoe UI', Segoe UI, Tahoma, Geneva, Verdana, sans-serif;
+                /* Tipo de fuente profesional */
+                font-size: 50px;
+                /* Tamaño de la fuente */
+                font-weight: 800;
+                /* Grosor de la letra (más negrita) */
+                color: var(--primary);
+                /* Color azul UMA */
+                letter-spacing: 0.2px;
+                /* Ajuste de espacio entre letras para un look más moderno */
+                margin: 0;
+                /* Eliminamos márgenes para que alinee bien con el logo */
             }
 
             .btn-system {
@@ -294,6 +346,316 @@
             .modal-content input {
                 margin-bottom: 15px;
             }
+
+            .btn-nueva {
+                background: var(--primary) !important;
+                color: white !important;
+            }
+
+            .search-export-container {
+                display: flex;
+                gap: 10px;
+                margin-top: 15px;
+                align-items: center;
+            }
+
+            .btn-export {
+                background: var(--primary);
+                color: white;
+                border: none;
+                padding: 0 20px;
+                height: 48px;
+                /* Para que coincida con la altura del input */
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+                white-space: nowrap;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            /* Nuevos ajustes para multilab */
+            .multilab-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                background: #e2e8f0;
+                padding: 15px;
+                border-radius: 12px;
+                margin-bottom: 15px;
+            }
+
+            .row-flex {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+
+            .input-with-btn {
+                display: flex;
+                flex: 1;
+                gap: 5px;
+            }
+
+            /* Asegura que los selectores ocupen el máximo del contenedor flexible */
+            .input-with-btn select {
+                flex: 1;
+                width: 100%;
+                /* Obliga a los selectores a intentar ocupar el mismo ancho */
+            }
+
+            /* Contenedor para la casilla "Mostrar todo" */
+            .checkbox-filter {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.9rem;
+                color: var(--primary);
+                font-weight: bold;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+
+            .checkbox-filter input {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+            }
+
+            .main-controls {
+                display: flex;
+                gap: 10px;
+                align-items: stretch;
+                margin-bottom: 15px;
+            }
+
+            .loc-group {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                flex: 1;
+            }
+
+            .btn-scan-new {
+                flex: 1;
+                margin-bottom: 0 !important;
+                height: auto;
+            }
+
+            .btn-manual-edit {
+                background: var(--primary);
+                color: white;
+                width: 60px;
+                border-radius: 12px;
+                border: none;
+                cursor: pointer;
+                font-size: 20px;
+            }
+
+            /* Estilo para la nueva fila superior con lupa */
+            .top-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+            }
+
+            .search-trigger {
+                background: none;
+                border: none;
+                font-size: 28px;
+                cursor: pointer;
+                padding: 10px;
+            }
+
+            /* Modal de búsqueda a pantalla completa */
+            #modalBuscador {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: var(--white);
+                z-index: 4000;
+                flex-direction: column;
+            }
+
+            .search-header {
+                padding: 20px;
+                border-bottom: 1px solid #e2e8f0;
+                display: flex;
+                gap: 15px;
+                align-items: center;
+            }
+
+            .search-results {
+                flex: 1;
+                overflow-y: auto;
+                padding: 10px;
+            }
+
+            /* Efecto de resaltado para TODOS los botones */
+            button,
+            .btn-system,
+            .btn-main,
+            .btn-login,
+            .search-trigger,
+            .btn-manual-edit {
+                transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+            }
+
+            button:hover,
+            .btn-system:hover,
+            .btn-main:hover,
+            .btn-login:hover,
+            .search-trigger:hover,
+            .btn-manual-edit:hover {
+                transform: scale(1.08) !important;
+                /* Aumenta ligeramente el tamaño */
+                filter: brightness(1.1);
+                /* Brilla un poco más */
+                cursor: pointer;
+            }
+
+            /* Ajuste para que los botones de acción (lápiz y papelera) estén juntos */
+            .action-buttons-cell {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                justify-content: flex-end;
+            }
+
+            /* Ajuste para la columna del ojo */
+            .col-view {
+                width: 40px;
+                text-align: center;
+                cursor: pointer;
+                font-size: 1.2rem;
+            }
+
+            /* Resaltado para el aviso de nombre no encontrado */
+            .warn-icon {
+                font-size: 1.2rem;
+                cursor: pointer;
+                filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.1));
+            }
+
+            /* Ajuste de alineación para la tabla */
+            table th,
+            table td {
+                vertical-align: middle;
+            }
+
+            /* Estilos para la Ficha Elegante */
+            .ficha-detalle {
+                line-height: 1.6;
+                color: #1e293b;
+            }
+
+            .ficha-header {
+                border-bottom: 2px solid var(--primary);
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .ficha-dato {
+                margin-bottom: 12px;
+                display: flex;
+                border-bottom: 1px solid #f1f5f9;
+                padding-bottom: 5px;
+            }
+
+            .ficha-label {
+                font-weight: bold;
+                color: #64748b;
+                width: 140px;
+                font-size: 0.85rem;
+                text-transform: uppercase;
+            }
+
+            .ficha-valor {
+                flex: 1;
+                font-weight: 500;
+            }
+
+            /* Botón flotante de edición dentro de la ficha */
+            .btn-edit-float {
+                background: var(--primary);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            /* Botones de acción en la esquina superior */
+            .ficha-top-actions {
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                display: flex;
+                gap: 18px;
+                /* Espacio entre iconos */
+                align-items: center;
+                z-index: 10;
+            }
+
+            .btn-icon-top {
+                background: none;
+                border: none;
+                font-size: 1.8rem;
+                cursor: pointer;
+                transition: transform 0.2s, filter 0.2s;
+                padding: 5px;
+                line-height: 1;
+            }
+
+            .btn-icon-top:hover {
+                transform: scale(1.25);
+                filter: brightness(1.2);
+            }
+
+            .text-red {
+                color: #d91d1d;
+            }
+
+            #modalFicha .modal-content {
+                width: 440px;
+                /* Forzamos la anchura al 80% del original (550px * 0.8) */
+                max-width: 90%;
+                /* Asegura que en móviles no se salga de la pantalla */
+                position: relative;
+                padding-top: 60px;
+                background: var(--white);
+                border-radius: 12px;
+                padding: 25px;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+
+
+
+            /* Resaltado del ojo al pasar el cursor */
+            .col-view:hover {
+                transform: scale(1.3);
+                filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.2));
+                transition: all 0.2s ease;
+            }
+
+            /* Ajuste de columnas de la tabla para que no se amontonen */
+            .tabla-reagentes th,
+            .tabla-reagentes td {
+                padding: 12px 8px;
+                text-align: left;
+            }
         </style>
 
         <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -305,48 +667,114 @@
 
     <div class="container">
         <div class="header-actions">
-            <h2>StockNow 🧪</h2>
-            <button class="btn-system" onclick="exportarCSV()">💾 EXPORTAR</button>
-        </div>
-
-        <div class="config-panel">
-            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
-                <label style="font-size: 12px; font-weight: bold; color: #64748b;">UBICACIÓN</label>
-
-                <select id="selectUbicacion">
-                    <option>Almacén Principal</option>
-                    <option>Nevera</option>
-                    <option>Armario Seguridad</option>
-                </select>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="Logo TR.png" alt="Logo" style="height: 85px; width: auto; border-radius: 5px;">
+                <h2>TraceReagents</h2>
             </div>
-            <button onclick="nuevaUbicacion()" class="btn-system" style="height: 48px;">+ NUEVA</button>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="search-trigger" onclick="abrirBuscador()">🔍</button>
+
+                <button onclick="exportarCSV()" title="Exportar CSV"
+                    style="background:none; border:none; font-size: 35px; cursor:pointer; padding: 0 5px;">
+                    💾
+                </button>
+
+                <button class="btn-login" onclick="alert('Próximamente: Gestión de usuarios')">
+                    <img src="login.jpg" alt="User">
+                    Iniciar sesión
+                </button>
+            </div>
         </div>
 
-        <button id="btn-toggle" class="btn-main" onclick="toggleScanner()">📷 ESCANEAR CAS</button>
-        <div style="margin-top: 15px; display: flex; gap: 10px;">
-            <input type="text" id="inputCasManual" placeholder="Introducir CAS manualmente (ej: 64-17-5)"
-                style="flex: 1;">
-            <button onclick="agregarCasManual()" class="btn-system"
-                style="background: var(--accent); color: white; padding: 0 20px;">AÑADIR</button>
+        <div class="multilab-panel">
+            <div class="row-flex">
+                <div class="input-with-btn">
+                    <select id="selectFacultad" onchange="render()">
+                        <option>Ciencias</option>
+                        <option>Escuela Industriales</option>
+                    </select>
+                    <button onclick="agregarOpcion('selectFacultad', 'Facultad')"
+                        class="btn-system btn-nueva">+</button>
+                </div>
+                <div class="input-with-btn">
+                    <select id="selectDepto" onchange="render()">
+                        <option>Química Analítica</option>
+                        <option>Química Física</option>
+                        <option>Química Inorgánica</option>
+                        <option>Química Orgánica</option>
+                        <option>Bioquímica</option>
+                        <option>Física</option>
+                        <option>Ingeniería Química</option>
+                    </select>
+                    <button onclick="agregarOpcion('selectDepto', 'Departamento')"
+                        class="btn-system btn-nueva">+</button>
+                </div>
+            </div>
+
+            <div class="row-flex" style="align-items: center;">
+                <div class="input-with-btn" style="flex: 1;">
+                    <select id="selectLab" onchange="render()">
+                        <option>Laboratorio Alumnos</option>
+                        <option>Investigación 1</option>
+                        <option>Investigación 2</option>
+                    </select>
+                    <button onclick="agregarOpcion('selectLab', 'Laboratorio')" class="btn-system btn-nueva">+</button>
+                </div>
+
+                <label class="checkbox-filter">
+                    <input type="checkbox" id="checkMostrarTodo" onchange="render()">
+                    Mostrar todo
+                </label>
+            </div>
         </div>
+
+
 
         <div id="video-container">
             <video id="video" autoplay playsinline></video>
             <div class="scan-region"></div>
-            <div id="status" style="background:#000; color:#fff; text-align:center; font-size:11px; padding:5px;">Alinee
-                el código</div>
         </div>
 
+        <div class="main-controls">
+            <div class="loc-group">
+                <div class="input-with-btn">
+                    <select id="selectUbicacion">
+                        <option>Armario 1</option>
+                        <option>Armario 2</option>
+                        <option>Vitrina 1</option>
+                        <option>Vitrina 2</option>
+                    </select>
+                    <button onclick="agregarOpcion('selectUbicacion', 'Ubicación')"
+                        class="btn-system btn-nueva">+</button>
+                </div>
+                <div class="input-with-btn">
+                    <select id="selectEstante">
+                        <option>Estante 1</option>
+                        <option>Estante 2</option>
+                        <option>Estante 3</option>
+                    </select>
+                    <button onclick="agregarOpcion('selectEstante', 'Estante')" class="btn-system btn-nueva">+</button>
+                </div>
+            </div>
+
+            <button id="btn-toggle" class="btn-main btn-scan-new" onclick="toggleScanner()">SCAN</button>
+
+            <button class="btn-manual-edit" onclick="abrirModalManual()">✏️</button>
+        </div>
+
+
         <canvas id="canvas-proc" style="display:none;"></canvas>
-        <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o CAS..." onkeyup="filtrarTabla()">
+
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th onclick="ordenarPor('nombre')" style="cursor:pointer">Producto / CAS ↕️</th>
-                        <th onclick="ordenarPor('ubicacion')" style="cursor:pointer">Ubicación / Cant / Cad ↕️</th>
-                        <th>Info</th>
-                        <th></th>
+                        <th style="width: 110px; text-align: center;">Info</th>
+                        <th onclick="ordenarPor('ref')" style="cursor:pointer">Ref.</th>
+                        <th onclick="ordenarPor('nombre')" style="cursor:pointer">Reactivo</th>
+                        <th onclick="ordenarPor('ubicacion')" style="cursor:pointer">Ubicación</th>
+                        <th onclick="ordenarPor('stock')" style="cursor:pointer; text-align: center;">Stock / Tam.</th>
+                        <th onclick="ordenarPor('cad_anio')" style="cursor:pointer; text-align: center;">Caducidad</th>
                     </tr>
                 </thead>
                 <tbody id="cuerpoTabla"></tbody>
@@ -375,14 +803,33 @@
         let worker = null;
         let isProcessing = false;
 
-        function nuevaUbicacion() {
-            const n = prompt("Nombre de la ubicación:");
+        // Función genérica para añadir opciones a cualquier desplegable
+        function agregarOpcion(idSelect, nombreCampo) {
+            const n = prompt("Nuevo " + nombreCampo + ":");
             if (n) {
-                const s = document.getElementById('selectUbicacion');
+                const s = document.getElementById(idSelect);
                 const o = document.createElement('option');
                 o.text = n; s.add(o); s.value = n;
             }
         }
+
+        // Funciones para el nuevo modal manual
+        function abrirModalManual() {
+            document.getElementById('modalManual').style.display = 'flex';
+            document.getElementById('manualCasInput').focus();
+        }
+
+        async function confirmarCasManual() {
+            const cas = document.getElementById('manualCasInput').value.trim();
+            if (/^(\d{2,7}-\d{2}-\d)$/.test(cas)) {
+                document.getElementById('modalManual').style.display = 'none';
+                document.getElementById('manualCasInput').value = "";
+                await procesarNuevoReactivo(cas);
+            } else {
+                alert("Formato de CAS inválido");
+            }
+        }
+
 
         async function toggleScanner() {
             const btn = document.getElementById('btn-toggle');
@@ -496,6 +943,10 @@
                     id: Date.now(),
                     nombre: "BUSCANDO...",
                     cas: cas,
+                    ref: "",
+                    facultad: document.getElementById('selectFacultad').value,     // Añadir esta línea
+                    departamento: document.getElementById('selectDepto').value,    // Añadir esta línea
+                    laboratorio: document.getElementById('selectLab').value,
                     ubicacion: document.getElementById('selectUbicacion').value,
                     fallido: false,
                     cantidad: "250",
@@ -527,43 +978,72 @@
             const mesActual = ahora.getMonth() + 1;
             const anioActual = ahora.getFullYear();
 
+            // 1. Obtener valores de los filtros superiores
+            const filtroFacultad = document.getElementById('selectFacultad').value;
+            const filtroDepto = document.getElementById('selectDepto').value;
+            const filtroLab = document.getElementById('selectLab').value;
+            const mostrarTodo = document.getElementById('checkMostrarTodo').checked;
+
             const tbody = document.getElementById('cuerpoTabla');
-            tbody.innerHTML = inventario.map(r => {
-                // Lógica de alerta de caducidad
+
+            // 2. Filtrar el inventario antes de mapear
+            const inventarioFiltrado = inventario.filter(r => {
+                // Si "Mostrar todo" está marcado, devolvemos true para todos
+                if (mostrarTodo) return true;
+
+                // Si no, aplicamos la lógica de filtros habitual
+                const coincideFacultad = !r.facultad || r.facultad === filtroFacultad;
+                const coincideDepto = !r.departamento || r.departamento === filtroDepto;
+                const coincideLab = !r.laboratorio || r.laboratorio === filtroLab;
+                return coincideFacultad && coincideDepto && coincideLab;
+            });
+
+            // 3. Dibujar solo los elementos filtrados
+            tbody.innerHTML = inventarioFiltrado.map(r => {
                 const esCaducado = (parseInt(r.cad_anio) < anioActual) ||
                     (parseInt(r.cad_anio) === anioActual && parseInt(r.cad_mes) < mesActual);
 
                 return `
             <tr>
+                <td style="text-align: center; white-space: nowrap;">
+                    <span class="col-view" onclick="verFicha(${r.id})" style="cursor:pointer; font-size:1.3rem; margin-right: 5px;" title="Ver ficha">👁️</span>
+                    ${r.ficha_url
+                        ? `<span onclick="window.open('${r.ficha_url}','_blank')" style="cursor:pointer; font-size:1.1rem; margin-right: 5px;" title="Ficha de Seguridad">📋</span>`
+                        : '<span style="display:inline-block; width:1.1rem; margin-right: 5px;"></span>'
+                    }
+                    ${r.fallido || r.nombre.includes("BUSCANDO") || r.nombre === r.cas
+                        ? `<span class="warn-icon" title="Nombre no encontrado - Reintentar" onclick="procesarNuevoReactivo('${r.cas}', true)" style="cursor:pointer; font-size:1.2rem;">⚠️</span>`
+                        : '<span style="display:inline-block; width:1.2rem;"></span>'
+                    }
+                </td>
+
+                <td style="font-weight: bold; color: var(--primary); font-family: monospace;">
+                    ${r.ref || '-'}
+                </td>
+
                 <td>
                     <div style="font-weight: bold; color: var(--primary);">${r.nombre}</div>
-                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">CAS: ${r.cas}</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">${r.cas}</div>
                 </td>
-                <td class="${esCaducado ? 'caducado' : ''}">
-                    <small>
-                        📍 <b>${r.ubicacion}</b><br>
-                        📦 Stock: <b>${r.stock || 1}</b> botes de ${r.cantidad} ${r.unidad}<br>
-                        📅 Exp: ${r.cad_mes}/${r.cad_anio}
-                        ${r.observaciones ? `📝 <i style="color:#666">${r.observaciones}</i>` : ''}
-                    </small>
-                </td>
+
                 <td>
-                    <div class="action-group">
-                        ${r.fallido ? `<button class="btn-retry" onclick="procesarNuevoReactivo('${r.cas}', true)">🔄</button>` : '✅'}
-                        
-                        <button class="btn-google" onclick="window.open('https://www.google.com/search?q=CAS+${r.cas}+hoja+seguridad+español','_blank')">🌍</button>
-                        
-                        ${r.ficha_url ?
-                        `<button class="btn-system" title="Ficha de Seguridad" style="background:#f8fafc; border:1px solid var(--accent);" onclick="window.open('${r.ficha_url}','_blank')">🛡️</button>`
-                        : ''
-                    }
-                        
-                        <button class="btn-system" onclick="editarCompleto(${r.id})">✏️</button>
+                    <div style="font-size: 0.9rem;">${r.ubicacion}</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">${r.estante || '-'}</div>
+                </td>
+                <td style="text-align: center;">
+                    <div style="font-weight: bold; color: var(--primary); font-size: 1.1rem;">
+                        ${r.stock || 1} <span style="font-size: 0.8rem; font-weight: normal;">uds.</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+                        ${r.cantidad} ${r.unidad}
                     </div>
                 </td>
-                <td><button onclick="borrar(${r.id})" style="border:none;background:none;font-size:1.2rem;cursor:pointer">🗑️</button></td>
+                <td class="${esCaducado ? 'caducado' : ''}" style="text-align: center; font-size: 0.9rem;">
+                    ${r.cad_mes}/${r.cad_anio}
+                </td>
             </tr>
-            `}).join('');
+            `;
+            }).join('');
         }
 
         function editarNombre(id) {
@@ -628,69 +1108,121 @@
 
         let editandoId = null;
 
-        function editarCompleto(id) {
+        function verFicha(id) {
             const r = inventario.find(x => x.id === id);
             if (!r) return;
             editandoId = id;
 
-            document.getElementById('editNombre').value = r.nombre;
-            document.getElementById('editCant').value = r.cantidad || "1"; // Ahora es Tamaño
-            document.getElementById('editUnidad').value = r.unidad || "g";
+            const contenido = document.getElementById('contenidoFicha');
+            contenido.innerHTML = `
+        <div class="ficha-header">
+            <div>
+                <h2 style="margin:0; color:var(--primary);">${r.nombre}</h2>
+                <code style="background:#f1f5f9; padding:2px 5px; border-radius:4px;">CAS: ${r.cas}</code>
+            </div>
+        </div>
+        <div class="ficha-dato"><span class="ficha-label">Facultad</span><span class="ficha-valor">${r.facultad || '-'}</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Departamento</span><span class="ficha-valor">${r.departamento || '-'}</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Laboratorio</span><span class="ficha-valor">${r.laboratorio || '-'}</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Ubicación</span><span class="ficha-valor">${r.ubicacion}</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Estante</span><span class="ficha-valor">${r.estante || '-'}</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Referencia</span><span class="ficha-valor" style="font-weight:bold; color:var(--primary);">${r.ref || 'Sin referencia'}</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Stock</span><span class="ficha-valor">${r.stock || 1} botes (${r.cantidad} ${r.unidad})</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Caducidad</span><span class="ficha-valor">${r.cad_mes}/${r.cad_anio}</span></div>
+        <div class="ficha-dato"><span class="ficha-label">Notas</span><span class="ficha-valor">${r.observaciones || 'Sin notas'}</span></div>
+    `;
 
-            // CARGAR EL STOCK (Si no existe, ponemos 1 por defecto)
-            document.getElementById('editStock').value = r.stock || "1";
+            document.getElementById('modalFicha').style.display = 'flex';
+        }
 
-            document.getElementById('editObs').value = r.observaciones || "";
-            // CARGAR LA FICHA
-            document.getElementById('editFicha').value = r.ficha_url || "";
-
-            const ubiSelect = document.getElementById('editUbicacion');
-            ubiSelect.innerHTML = document.getElementById('selectUbicacion').innerHTML;
-            ubiSelect.value = r.ubicacion;
-
-            const anioSelect = document.getElementById('editAnio');
-            anioSelect.innerHTML = "";
-            const anioActual = new Date().getFullYear();
-            for (let i = 0; i < 15; i++) {
-                let opt = document.createElement('option');
-                opt.value = anioActual + i; opt.text = anioActual + i;
-                anioSelect.add(opt);
-            }
-            document.getElementById('editMes').value = r.cad_mes || "01";
-            document.getElementById('editAnio').value = r.cad_anio || anioActual;
-
+        function abrirEditorDesdeFicha() {
+            document.getElementById('modalFicha').style.display = 'none';
+            // Aquí llamamos a tu antigua función de cargar los inputs del modal de edición
+            prepararEditor(editandoId);
             document.getElementById('modalEdicion').style.display = 'flex';
-            document.getElementById('btnGuardarModal').onclick = guardarCambiosModal;
         }
 
         function cerrarModal() {
             document.getElementById('modalEdicion').style.display = 'none';
         }
 
-        async function guardarCambiosModal() {
-            const r = inventario.find(x => x.id === editandoId);
+        function prepararEditor(id) {
+            const r = inventario.find(x => x.id === id);
+            if (!r) return;
 
+            // Sincronizar selectores de la ficha con los principales
+            const cargarSelect = (idDestino, idOrigen, valor) => {
+                const dest = document.getElementById(idDestino);
+                dest.innerHTML = document.getElementById(idOrigen).innerHTML;
+                dest.value = valor || document.getElementById(idOrigen).value;
+            };
+
+            cargarSelect('editFacultad', 'selectFacultad', r.facultad);
+            cargarSelect('editDepto', 'selectDepto', r.departamento);
+            cargarSelect('editLab', 'selectLab', r.laboratorio);
+            cargarSelect('editUbicacion', 'selectUbicacion', r.ubicacion);
+            cargarSelect('editEstante', 'selectEstante', r.estante);
+
+            // Rellenar campos de texto y número
+            document.getElementById('editNombre').value = r.nombre;
+            document.getElementById('editRef').value = r.ref || "";
+            document.getElementById('editCant').value = r.cantidad || "";
+            document.getElementById('editUnidad').value = r.unidad || "g";
+            document.getElementById('editStock').value = r.stock || "1";
+            document.getElementById('editObs').value = r.observaciones || "";
+            document.getElementById('editFicha').value = r.ficha_url || "";
+
+            // Configurar años en el selector de caducidad
+            const anioSel = document.getElementById('editAnio');
+            anioSel.innerHTML = "";
+            const anioActual = new Date().getFullYear();
+            for (let i = 0; i < 15; i++) {
+                let opt = document.createElement('option');
+                opt.value = anioActual + i; opt.text = anioActual + i;
+                anioSel.add(opt);
+            }
+            document.getElementById('editMes').value = r.cad_mes || "01";
+            document.getElementById('editAnio').value = r.cad_anio || anioActual;
+        }
+
+        async function guardarCambiosModal() {
+            // 1. Buscamos el reactivo en el inventario
+            const r = inventario.find(x => x.id === editandoId);
+            if (!r) return; // Seguridad por si no encuentra el ID
+
+            // 2. Recogemos el valor de la nueva referencia
+            const refVal = document.getElementById('editRef').value;
+
+            // 3. Asignamos los valores de los desplegables y textos
+            r.facultad = document.getElementById('editFacultad').value;
+            r.departamento = document.getElementById('editDepto').value;
+            r.laboratorio = document.getElementById('editLab').value;
+
+            r.ref = refVal; // <--- NUEVO: Guardamos la referencia (Na25, K101, etc.)
             r.nombre = document.getElementById('editNombre').value.toUpperCase();
             r.ubicacion = document.getElementById('editUbicacion').value;
+            r.estante = document.getElementById('editEstante').value;
 
-            // Guardamos Tamaño y Stock por separado
+            // 4. Guardamos Tamaño y Stock
             r.cantidad = document.getElementById('editCant').value; // Tamaño numérico
             r.unidad = document.getElementById('editUnidad').value;  // Unidad (mL, g, etc)
             r.stock = document.getElementById('editStock').value;   // Cantidad de botes
 
+            // 5. Datos de caducidad y otros
             r.cad_mes = document.getElementById('editMes').value;
             r.cad_anio = document.getElementById('editAnio').value;
             r.observaciones = document.getElementById('editObs').value;
             r.ficha_url = document.getElementById('editFicha').value;
 
-            // Lógica de PubChem que ya tenías
+            // 6. Lógica de PubChem (reintentar nombre si estaba fallido)
             if (r.nombre.includes("BUSCANDO") || r.nombre === r.cas) {
                 const datos = await obtenerDatosQuimicos(r.cas);
                 r.nombre = datos.nombre;
-                r.ficha_url = datos.ficha;
+                if (datos.ficha) r.ficha_url = datos.ficha;
             }
 
-            actualizarStorage();
+            // 7. Finalizar: Guardar, Refrescar tabla y Cerrar Modal
+            actualizarStorage(); // Asegúrate de que tu función se llame así o saveStorage()
             render();
             document.getElementById('modalEdicion').style.display = 'none';
         }
@@ -726,17 +1258,106 @@
             }
         });
 
+
+        function abrirBuscador() {
+            document.getElementById('modalBuscador').style.display = 'flex';
+            document.getElementById('inputBuscadorReal').focus();
+            filtrarBusquedaRealTime(); // Para cargar todos al inicio
+        }
+
+        function cerrarBuscador() {
+            document.getElementById('modalBuscador').style.display = 'none';
+        }
+
+        function filtrarBusquedaRealTime() {
+            const term = document.getElementById('inputBuscadorReal').value.toLowerCase();
+            const resultados = document.getElementById('resultadosBusqueda');
+
+            const filtrados = inventario.filter(r => {
+                return r.nombre.toLowerCase().includes(term) ||
+                    r.cas.includes(term) ||
+                    r.ubicacion.toLowerCase().includes(term) ||
+                    (r.estante && r.estante.toLowerCase().includes(term));
+            });
+
+            resultados.innerHTML = filtrados.map(r => `
+        <tr>
+            <td onclick="cerrarBuscador(); editarCompleto(${r.id})" style="cursor:pointer; padding: 15px; border-bottom: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <b>${r.nombre}</b><br>
+                        <small>${r.cas} | ${r.ubicacion} | ${r.estante || 'Sin estante'}</small>
+                    </div>
+                    <div style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 6px; font-weight: bold;">
+                        Stock: ${r.stock || 1}
+                    </div>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+        }
+
+        function confirmarBorradoDesdeFicha() {
+            if (confirm("¿Estás seguro de que deseas eliminar este reactivo permanentemente?")) {
+                borrar(editandoId); // Reutiliza tu función de borrar existente
+                document.getElementById('modalEdicion').style.display = 'none';
+            }
+        }
+
     </script>
 
-    <div id="modalEdicion">
-        <div class="modal-content">
+    <div id="modalFicha"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2500; align-items:center; justify-content:center;">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="ficha-top-actions">
+                <button class="btn-icon-top" onclick="abrirEditorDesdeFicha()" title="Editar">✏️</button>
+                <button class="btn-icon-top" onclick="document.getElementById('modalFicha').style.display='none'"
+                    title="Cerrar" style="color: #d91d1d;">✖️</button>
+            </div>
+
+            <div id="contenidoFicha" class="ficha-detalle">
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEdicion"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center;">
+        <div class="modal-content"
+            style="max-width: 550px; max-height: 90vh; overflow-y: auto; position: relative; padding-top: 60px;">
+
+            <div class="ficha-top-actions">
+                <button class="btn-icon-top" onclick="confirmarBorradoDesdeFicha()" title="Eliminar">🗑️</button>
+                <button class="btn-icon-top" onclick="guardarCambiosModal()" title="Guardar cambios">💾</button>
+                <button class="btn-icon-top" onclick="document.getElementById('modalEdicion').style.display='none'"
+                    title="Cancelar" style="color: #d91d1d;">✖️</button>
+            </div>
+
             <h3>📝 Editar Registro</h3>
+
+            <label>Facultad:</label>
+            <select id="editFacultad"></select>
+
+            <label>Departamento:</label>
+            <select id="editDepto"></select>
+
+            <label>Laboratorio:</label>
+            <select id="editLab"></select>
+
+            <label>Referencia Interna (Ref):</label>
+            <input type="text" id="editRef" placeholder="Ej: Na25, K10...">
 
             <label>Nombre del Producto:</label>
             <input type="text" id="editNombre">
 
             <label>Ubicación:</label>
             <select id="editUbicacion"></select>
+
+            <label>Estante:</label>
+            <select id="editEstante">
+                <option value="Estante 1">Estante 1</option>
+                <option value="Estante 2">Estante 2</option>
+                <option value="Estante 3">Estante 3</option>
+            </select>
 
             <label>Tamaño (Capacidad del envase):</label>
             <div style="display:flex; gap:10px; margin-bottom:15px;">
@@ -757,6 +1378,16 @@
             <div style="display:flex; gap:10px;">
                 <select id="editMes">
                     <option value="01">Ene</option>
+                    <option value="02">Feb</option>
+                    <option value="03">Mar</option>
+                    <option value="04">Abr</option>
+                    <option value="05">May</option>
+                    <option value="06">Jun</option>
+                    <option value="07">Jul</option>
+                    <option value="08">Ago</option>
+                    <option value="09">Sep</option>
+                    <option value="10">Oct</option>
+                    <option value="11">Nov</option>
                     <option value="12">Dic</option>
                 </select>
                 <select id="editAnio"></select>
@@ -769,13 +1400,33 @@
             <textarea id="editObs"
                 style="width:100%; height:60px; border-radius:8px; border:1px solid #cbd5e1; padding:10px;"></textarea>
 
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button onclick="document.getElementById('modalEdicion').style.display='none'"
-                    style="flex:1; padding:12px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">Cancelar</button>
-                <button id="btnGuardarModal"
-                    style="flex:1; padding:12px; border-radius:8px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold;">Guardar
-                    Cambios</button>
+        </div>
+    </div>
+    <div id="modalManual"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center;">
+        <div class="modal-content">
+            <h3>Añadir CAS Manual</h3>
+            <input type="text" id="manualCasInput" placeholder="Ej: 64-17-5">
+            <div style="display:flex; gap:10px;">
+                <button onclick="document.getElementById('modalManual').style.display='none'" class="btn-system"
+                    style="flex:1;">Cancelar</button>
+                <button onclick="confirmarCasManual()" class="btn-export" style="flex:1;">AÑADIR</button>
             </div>
+        </div>
+    </div>
+
+    <div id="modalBuscador">
+        <div class="search-header">
+            <button onclick="cerrarBuscador()"
+                style="background:none; border:none; font-size:24px; cursor:pointer;">⬅️</button>
+            <input type="text" id="inputBuscadorReal" placeholder="Buscar nombre, CAS, armario o estante..."
+                onkeyup="filtrarBusquedaRealTime()" style="flex:1; font-size:18px;">
+
+        </div>
+        <div class="search-results">
+            <table style="width:100%">
+                <tbody id="resultadosBusqueda"></tbody>
+            </table>
         </div>
     </div>
 
