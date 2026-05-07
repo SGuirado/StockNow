@@ -958,19 +958,16 @@
 
 
             async function iniciarCamara() {
-                const modalCamara = document.getElementById('modalCamara');
                 const video = document.getElementById('video');
+                const modalCamara = document.getElementById('modalCamara');
 
-                // 1. Limpiar rastro anterior
+                // Limpieza preventiva
                 if (streamActual) {
-                    streamActual.getTracks().forEach(track => track.stop());
+                    streamActual.getTracks().forEach(t => t.stop());
                 }
 
-                // 2. Mostrar el modal PRIMERO (esto ayuda a algunos navegadores a validar la UI)
-                modalCamara.style.display = 'flex';
-
                 try {
-                    // 3. Pedir cámara sin resoluciones fijas (esto evita el error 4 de Overconstrained)
+                    // Pedimos cámara de la forma más básica posible
                     const stream = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: "environment" },
                         audio: false
@@ -979,21 +976,22 @@
                     streamActual = stream;
                     video.srcObject = stream;
 
-                    // 4. Forzar el inicio del vídeo tras un breve delay técnico
+                    // Atributos para iOS/Android
+                    video.setAttribute("playsinline", true);
+                    video.muted = true;
+
+                    // Solo mostramos el modal si el video realmente empieza a reproducirse
                     video.onloadedmetadata = () => {
-                        setTimeout(() => {
-                            video.play().catch(e => console.error("Error Play:", e));
+                        video.play().then(() => {
+                            modalCamara.style.display = 'flex';
                             requestAnimationFrame(escanear);
-                        }, 100);
+                        });
                     };
 
                 } catch (err) {
-                    modalCamara.style.display = 'none';
-                    console.error("Error Cámara:", err);
-
-                    // El mensaje de error técnico real para saber qué pasa:
-                    alert("FALLO DE CÁMARA:\n" + err.name + ": " + err.message +
-                        "\n\nSOLUCIÓN:\n1. Pulsa el candado de la URL.\n2. Pulsa 'Ajustes del sitio'.\n3. Dale a 'Borrar y restablecer'.");
+                    console.error("Error acceso cámara:", err);
+                    // Este alert nos dirá el motivo real en el móvil
+                    alert("Error: " + err.name + "\nPor favor, asegúrate de estar en HTTPS y haber aceptado los permisos en el candado de la URL.");
                 }
             }
 
@@ -1043,6 +1041,26 @@
                         cicloEscaneo();
                     } catch (e) { alert("Error de cámara"); }
                 } else { detenerEscaneo(); }
+            }
+
+            function cerrarCamara() {
+                const modalCamara = document.getElementById('modalCamara');
+                const video = document.getElementById('video');
+
+                if (streamActual) {
+                    // 1. Pausar el video
+                    video.pause();
+                    // 2. Detener todas las pistas de la cámara
+                    streamActual.getTracks().forEach(track => {
+                        track.stop();
+                        console.log("Pista detenida:", track.label);
+                    });
+                    // 3. Limpiar el objeto de video
+                    video.srcObject = null;
+                    streamActual = null;
+                }
+
+                modalCamara.style.display = 'none';
             }
 
             function detenerEscaneo() {
