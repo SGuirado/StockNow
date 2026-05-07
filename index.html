@@ -843,23 +843,29 @@
                     laboratorio</span>
             </label>
 
-            <div style="display: flex; gap: 10px; width: 50%;">
-                <div class="input-with-btn" style="flex: 1;">
-                    <select id="selectUbicacion" style="width: 50%;">
-                        <option>Armario A1</option>
-                        <option>Armario A2</option>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary);">Ubicación
+                        (Armario):</label>
+                    <select id="ubicacion" class="input-field" style="width: 100%;">
+                        <option value="Armario 1">Armario 1</option>
+                        <option value="Armario 2">Armario 2</option>
+                        <option value="Armario 3">Armario 3</option>
+                        <option value="Nevera">Nevera</option>
+                        <option value="Congelador">Congelador</option>
                     </select>
-                    <button onclick="agregarOpcion('selectUbicacion', 'Ubicación')"
-                        class="btn-system btn-nueva">+</button>
                 </div>
-
-                <div class="input-with-btn" style="flex: 1;">
-                    <select id="selectEstante" style="width: 50%;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary);">Estante
+                        / Balda:</label>
+                    <select id="estante" class="input-field" style="width: 100%;">
                         <option value="Estante 1">Estante 1</option>
                         <option value="Estante 2">Estante 2</option>
                         <option value="Estante 3">Estante 3</option>
+                        <option value="Estante 4">Estante 4</option>
+                        <option value="Cajón">Cajón</option>
                     </select>
-                    <button onclick="agregarOpcion('selectEstante', 'Estante')" class="btn-system btn-nueva">+</button>
                 </div>
             </div>
         </div>
@@ -963,46 +969,34 @@
                 const video = document.getElementById('video');
                 const modalCamara = document.getElementById('modalCamara');
 
-                // 1. Limpieza total antes de empezar
+                // 1. Limpieza absoluta antes de intentar abrir
                 if (streamActual) {
-                    streamActual.getTracks().forEach(track => track.stop());
+                    streamActual.getTracks().forEach(t => t.stop());
                     streamActual = null;
                 }
 
                 try {
-                    // 2. Intento flexible: Si es móvil pedirá la trasera, si es PC pedirá la que haya
-                    const constraints = {
+                    // Usamos la configuración más básica para evitar conflictos de resolución
+                    const stream = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: "environment" },
                         audio: false
-                    };
-
-                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    });
 
                     streamActual = stream;
                     video.srcObject = stream;
 
-                    // Atributos de compatibilidad
+                    // Atributos para compatibilidad móvil
                     video.setAttribute("playsinline", true);
                     video.muted = true;
-                    video.play();
 
+                    // Esperamos a que el hardware responda
+                    await video.play();
                     modalCamara.style.display = 'flex';
-
-                    // 3. Iniciar bucle de escaneo
                     requestAnimationFrame(escanear);
 
                 } catch (err) {
-                    console.error("Error detallado:", err);
-                    // Si falla por "Overconstrained", intentamos sin ninguna restricción
-                    try {
-                        streamActual = await navigator.mediaDevices.getUserMedia({ video: true });
-                        video.srcObject = streamActual;
-                        video.play();
-                        modalCamara.style.display = 'flex';
-                        requestAnimationFrame(escanear);
-                    } catch (e) {
-                        alert("No se puede acceder a la cámara. Por favor, cierra otras pestañas que puedan estar usándola y refresca la página.");
-                    }
+                    console.error("Fallo de cámara:", err);
+                    alert("No se puede abrir la cámara. Asegúrate de:\n1. Usar Chrome o Safari directamente.\n2. Estar en una conexión segura (HTTPS).\n3. No tener la cámara abierta en otra app.");
                 }
             }
 
@@ -1059,14 +1053,15 @@
                 const video = document.getElementById('video');
 
                 if (streamActual) {
-                    // Detener pistas ANTES de limpiar el video
+                    // Orden correcto: primero pausar video, luego detener tracks, luego limpiar src
+                    video.pause();
                     streamActual.getTracks().forEach(track => track.stop());
                     video.srcObject = null;
                     streamActual = null;
+                    console.log("Cámara cerrada y liberada correctamente.");
                 }
                 modalCamara.style.display = 'none';
             }
-
             function detenerEscaneo() {
                 if (videoStream) videoStream.getTracks().forEach(t => t.stop());
                 document.getElementById('video-container').style.display = 'none';
