@@ -7,6 +7,7 @@
     <title>
         <title>TraceReagents</title>
         <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
         <style>
             :root {
                 /* Colores Universidad de Málaga */
@@ -959,58 +960,69 @@
                 const modalCamara = document.getElementById('modalCamara');
                 const video = document.getElementById('video');
 
-                // 1. Limpiar flujos anteriores para liberar el hardware
                 if (streamActual) {
                     streamActual.getTracks().forEach(track => track.stop());
-                    streamActual = null;
                 }
 
-                // 2. Definimos varios intentos, de más específico a más genérico
-                const intentos = [
-                    { video: { facingMode: { ideal: "environment" } } }, // Preferir trasera
-                    { video: { facingMode: "environment" } },           // Intentar trasera
-                    { video: true }                                     // Cualquier cámara disponible
-                ];
+                try {
+                    // Usamos la configuración más compatible posible
+                    const constraints = {
+                        video: { facingMode: "environment" },
+                        audio: false
+                    };
 
-                let ultimoError = null;
-
-                for (const constraints of intentos) {
-                    try {
-                        console.log("Probando cámara con:", constraints);
-                        streamActual = await navigator.mediaDevices.getUserMedia(constraints);
-                        if (streamActual) break;
-                    } catch (e) {
-                        ultimoError = e;
-                        console.error("Fallo intento:", constraints, e);
-                    }
-                }
-
-                if (streamActual) {
+                    streamActual = await navigator.mediaDevices.getUserMedia(constraints);
                     video.srcObject = streamActual;
 
-                    // Atributos críticos para móviles (iOS y Android)
+                    // Atributos críticos para iOS y Android
                     video.setAttribute("playsinline", true);
-                    video.setAttribute("muted", true);
                     video.muted = true;
 
-                    // Importante: esperar a que el vídeo esté listo para darle al Play
+                    // Esperamos a que el vídeo esté listo para mostrar el modal
                     video.onloadedmetadata = () => {
-                        video.play().catch(e => console.error("Error al iniciar play:", e));
+                        video.play();
                         modalCamara.style.display = 'flex';
                         requestAnimationFrame(escanear);
                     };
-                } else {
-                    // Si llegamos aquí, mostramos el nombre técnico del error
-                    let mensaje = "No se pudo acceder a la cámara.\n\n";
-                    if (ultimoError) {
-                        mensaje += "Error: " + ultimoError.name + "\n";
-                        mensaje += "Detalle: " + ultimoError.message;
-                    }
-                    alert(mensaje);
+                } catch (err) {
+                    console.error("Error de cámara:", err);
+                    alert("No se pudo conectar con la cámara. Comprueba que has dado permisos en el candado de la URL y que usas HTTPS.");
                 }
             }
 
 
+            function escanear() {
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+                const context = canvas.getContext('2d', { willReadFrequently: true });
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // Verificamos si la librería jsQR está cargada
+                    if (typeof jsQR !== 'undefined') {
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "dontInvert",
+                        });
+
+                        if (code) {
+                            console.log("Código detectado:", code.data);
+                            procesarEscaneo(code.data);
+                            cerrarCamara();
+                            return; // Detenemos el bucle si hay éxito
+                        }
+                    }
+                }
+
+                // Si el modal sigue visible, seguimos escaneando
+                if (document.getElementById('modalCamara').style.display === 'flex') {
+                    requestAnimationFrame(escanear);
+                }
+            }
             async function toggleScanner() {
                 const btn = document.getElementById('btn-toggle');
                 if (!isScanning) {
