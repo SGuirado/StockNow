@@ -956,47 +956,55 @@
 
 
             async function iniciarCamara() {
+                const modalCamara = document.getElementById('modalCamara');
+                const video = document.getElementById('video');
+
                 try {
-                    // Detenemos cualquier flujo previo si existe
+                    // 1. Limpieza: Detener cualquier cámara abierta previamente
                     if (streamActual) {
                         streamActual.getTracks().forEach(track => track.stop());
                     }
 
-                    // CONFIGURACIÓN CRÍTICA: Forzamos la cámara trasera (environment)
+                    // 2. Intentar primero con la configuración ideal (Cámara trasera forzada)
                     const constraints = {
                         video: {
-                            facingMode: { exact: "environment" }, // Fuerza la trasera. Si falla, probar solo con "environment"
+                            facingMode: { ideal: "environment" },
                             width: { ideal: 1280 },
                             height: { ideal: 720 }
-                        }
+                        },
+                        audio: false
                     };
 
-                    try {
-                        streamActual = await navigator.mediaDevices.getUserMedia(constraints);
-                    } catch (e) {
-                        // Si falla el modo 'exact', intentamos el modo flexible (algunos navegadores lo prefieren)
-                        console.warn("Fallo cámara exacta, intentando modo flexible...");
-                        streamActual = await navigator.mediaDevices.getUserMedia({
-                            video: { facingMode: "environment" }
-                        });
-                    }
-
-                    const video = document.getElementById('video');
+                    streamActual = await navigator.mediaDevices.getUserMedia(constraints);
                     video.srcObject = streamActual;
 
-                    // Atributos necesarios para que iOS (Safari) no abra el vídeo en pantalla completa
+                    // 3. Atributos críticos para Safari/iOS y navegadores integrados
                     video.setAttribute("playsinline", true);
                     video.setAttribute("muted", true);
-
                     video.play();
 
-                    document.getElementById('modalCamara').style.display = 'flex';
-                    // Iniciamos el bucle de escaneo
+                    modalCamara.style.display = 'flex';
+
+                    // 4. Iniciar el escaneo (Asegúrate de que la función 'escanear' existe)
                     requestAnimationFrame(escanear);
 
                 } catch (err) {
-                    console.error("Error acceso cámara:", err);
-                    alert("Error de cámara: " + err.name + ". Asegúrate de usar HTTPS y dar permisos.");
+                    console.error("Error detallado:", err);
+
+                    // 5. Segundo intento: Configuración básica si la anterior falla
+                    if (err.name === 'OverconstrainedError' || err.name === 'NotFoundError') {
+                        try {
+                            streamActual = await navigator.mediaDevices.getUserMedia({ video: true });
+                            video.srcObject = streamActual;
+                            video.play();
+                            modalCamara.style.display = 'flex';
+                            requestAnimationFrame(escanear);
+                        } catch (segundoErr) {
+                            alert("Error fatal: No se puede acceder a ninguna cámara.");
+                        }
+                    } else {
+                        alert("Error de acceso: " + err.message + "\n\nPasos para solucionar:\n1. Ve al candado en la barra de direcciones.\n2. Pulsa 'Permisos' o 'Ajustes del sitio'.\n3. Dale permiso a la Cámara.");
+                    }
                 }
             }
 
