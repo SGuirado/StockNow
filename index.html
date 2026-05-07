@@ -959,40 +959,54 @@
                 const modalCamara = document.getElementById('modalCamara');
                 const video = document.getElementById('video');
 
-                // 1. Limpieza total de flujos anteriores
+                // 1. Limpiar flujos anteriores para liberar el hardware
                 if (streamActual) {
                     streamActual.getTracks().forEach(track => track.stop());
+                    streamActual = null;
                 }
 
-                // 2. Intentamos primero lo más sencillo (Cámara trasera)
-                const opciones = [
-                    { video: { facingMode: { exact: "environment" } } }, // Intento 1: Trasera obligatoria
-                    { video: { facingMode: "environment" } },           // Intento 2: Trasera preferida
-                    { video: true }                                     // Intento 3: Cualquiera (último recurso)
+                // 2. Definimos varios intentos, de más específico a más genérico
+                const intentos = [
+                    { video: { facingMode: { ideal: "environment" } } }, // Preferir trasera
+                    { video: { facingMode: "environment" } },           // Intentar trasera
+                    { video: true }                                     // Cualquier cámara disponible
                 ];
 
-                let errorFinal = null;
+                let ultimoError = null;
 
-                for (let opt of opciones) {
+                for (const constraints of intentos) {
                     try {
-                        streamActual = await navigator.mediaDevices.getUserMedia(opt);
-                        if (streamActual) break; // Si funciona, salimos del bucle
+                        console.log("Probando cámara con:", constraints);
+                        streamActual = await navigator.mediaDevices.getUserMedia(constraints);
+                        if (streamActual) break;
                     } catch (e) {
-                        errorFinal = e;
-                        console.warn("Fallo con opción:", opt, e);
+                        ultimoError = e;
+                        console.error("Fallo intento:", constraints, e);
                     }
                 }
 
                 if (streamActual) {
                     video.srcObject = streamActual;
-                    // Atributos obligatorios para iOS/Android
+
+                    // Atributos críticos para móviles (iOS y Android)
                     video.setAttribute("playsinline", true);
+                    video.setAttribute("muted", true);
                     video.muted = true;
-                    video.play();
-                    modalCamara.style.display = 'flex';
-                    requestAnimationFrame(escanear);
+
+                    // Importante: esperar a que el vídeo esté listo para darle al Play
+                    video.onloadedmetadata = () => {
+                        video.play().catch(e => console.error("Error al iniciar play:", e));
+                        modalCamara.style.display = 'flex';
+                        requestAnimationFrame(escanear);
+                    };
                 } else {
-                    alert("ERROR CRÍTICO DE CÁMARA:\n" + (errorFinal ? errorFinal.message : "No detectada"));
+                    // Si llegamos aquí, mostramos el nombre técnico del error
+                    let mensaje = "No se pudo acceder a la cámara.\n\n";
+                    if (ultimoError) {
+                        mensaje += "Error: " + ultimoError.name + "\n";
+                        mensaje += "Detalle: " + ultimoError.message;
+                    }
+                    alert(mensaje);
                 }
             }
 
