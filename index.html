@@ -931,9 +931,10 @@
 
             let inventario = JSON.parse(localStorage.getItem('lab_inv_v5')) || [];
             let isScanning = false;
+            let streamActual = null; // Esta será la única variable para controlar la cámara
             let worker = null;
             let isProcessing = false;
-            let streamActual = null; // Esta será la única variable para controlar la cámara
+
 
             // Función genérica para añadir opciones a cualquier desplegable
             function agregarOpcion(idSelect, nombreCampo) {
@@ -966,28 +967,33 @@
                 const video = document.getElementById('video');
                 const modalCamara = document.getElementById('modalCamara');
 
+                // Si ya había una cámara abierta, la cerramos bien antes de empezar
+                if (streamActual) {
+                    streamActual.getTracks().forEach(t => t.stop());
+                }
+
                 try {
-                    // Pedimos permiso de video de forma básica
-                    const stream = await navigator.mediaDevices.getUserMedia({
+                    // Pedimos la cámara trasera de la forma más sencilla posible
+                    streamActual = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: "environment" },
                         audio: false
                     });
 
-                    streamActual = stream;
-                    video.srcObject = stream;
+                    video.srcObject = streamActual;
 
-                    // Atributos para que iOS no bloquee el video
+                    // Atributos obligatorios para iOS y Android
                     video.setAttribute("playsinline", true);
                     video.muted = true;
 
-                    // Esperamos a que el video esté listo para mostrar el modal
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        modalCamara.style.display = 'flex';
-                        requestAnimationFrame(escanear); // Inicia el bucle de lectura
-                    };
+                    await video.play();
+                    modalCamara.style.display = 'flex';
+
+                    // Iniciamos el bucle de escaneo QR
+                    requestAnimationFrame(escanear);
+
                 } catch (err) {
-                    alert("No se pudo abrir la cámara. Revisa si has dado permiso en el candado de la URL.");
+                    console.error("Error de cámara:", err);
+                    alert("No se pudo activar la cámara. Asegúrate de estar en HTTPS y dar permisos en el candado de la URL.");
                 }
             }
 
@@ -1026,17 +1032,37 @@
             }
             async function toggleScanner() {
                 const btn = document.getElementById('btn-toggle');
+
                 if (!isScanning) {
                     try {
-                        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                        document.getElementById('video').srcObject = videoStream;
+                        // Pedimos cámara trasera de forma sencilla
+                        streamActual = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: "environment" }
+                        });
+
+                        const video = document.getElementById('video');
+                        video.srcObject = streamActual;
+                        video.setAttribute("playsinline", true); // Obligatorio para iPhone
+                        video.play();
+
                         document.getElementById('video-container').style.display = 'block';
-                        btn.innerText = "⏹️ DETENER"; btn.classList.add('active');
+                        btn.innerText = "⏹️ DETENER";
+                        btn.classList.add('active');
                         isScanning = true;
-                        if (!worker) worker = await Tesseract.createWorker('eng');
-                        cicloEscaneo();
-                    } catch (e) { alert("Error de cámara"); }
-                } else { detenerEscaneo(); }
+
+                        // Inicializamos el trabajador de Tesseract si no existe
+                        if (!worker) {
+                            worker = await Tesseract.createWorker('eng');
+                        }
+
+                        cicloEscaneo(); // Empezamos a buscar el número CAS
+                    } catch (e) {
+                        alert("Error al acceder a la cámara. Revisa los permisos.");
+                        console.error(e);
+                    }
+                } else {
+                    detenerEscaneo();
+                }
             }
 
             function cerrarCamara() {
@@ -1044,59 +1070,65 @@
                 const video = document.getElementById('video');
 
                 if (streamActual) {
-                    video.pause(); // 1. Pausamos la imagen
+                    video.pause(); // 1. Pausamos el video
                     streamActual.getTracks().forEach(track => track.stop()); // 2. Apagamos el hardware
-                    video.srcObject = null; // 3. Desconectamos el video del flujo
-                    streamActual = null; // 4. Vaciamos la variable
+                    video.srcObject = null; // 3. Desconectamos la fuente
+                    streamActual = null; // 4. Limpiamos la variable
                 }
                 modalCamara.style.display = 'none';
                 isScanning = false;
             }
 
             function detenerEscaneo() {
-                if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+                if (streamActual) {
+                    streamActual.getTracks().forEach(t => t.stop());
+                    streamActual = null;
+                }
                 document.getElementById('video-container').style.display = 'none';
-                document.getElementById('btn-toggle').innerText = "📷 ESCANEAR CAS";
-                document.getElementById('btn-toggle').classList.remove('active');
+                const btn = document.getElementById('btn-toggle');
+                btn.innerText = "📷 ESCANEAR CAS";
+                btn.classList.remove('active');
                 isScanning = false;
             }
 
             async function cicloEscaneo() {
-                if (!isScanning || isProcessing) { requestAnimationFrame(cicloEscaneo); return; }
+                if (!isScanning || isProcessing) {
+                    if (isScanning) requestAnimationFrame(cicloEscaneo);
+                    return;
+                }
+
                 const video = document.getElementById('video');
                 const canvas = document.getElementById('canvas-proc');
+                if (!canvas) return;
+
                 const ctx = canvas.getContext('2d');
                 const scale = video.videoWidth / video.clientWidth;
+
                 canvas.width = video.videoWidth * 0.9;
                 canvas.height = 180 * scale;
+
+                // Filtro para mejorar la lectura del texto (Blanco y negro con contraste)
                 ctx.filter = 'contrast(1.6) grayscale(1)';
                 ctx.drawImage(video, (video.videoWidth - canvas.width) / 2, (video.videoHeight - canvas.height) / 2, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 
                 try {
                     const { data: { text } } = await worker.recognize(canvas);
+                    // Expresión regular para encontrar el formato de un número CAS
                     const match = text.match(/(\d{2,7}-\d{2}-\d)/);
+
                     if (match) {
-                        const cas = match[1].trim();
-                        if (!inventario.length || inventario[0].cas !== cas) {
-                            isProcessing = true;
+                        const casDetectado = match[1].trim();
+                        isProcessing = true;
 
-                            // EFECTO VISUAL DE DESTELLO
-                            let flashDiv = document.getElementById('flash-effect');
-                            if (!flashDiv) {
-                                flashDiv = document.createElement('div');
-                                flashDiv.id = 'flash-effect';
-                                flashDiv.className = 'flash-capture';
-                                document.getElementById('video-container').appendChild(flashDiv);
-                            }
-                            flashDiv.classList.add('do-flash');
-                            setTimeout(() => flashDiv.classList.remove('do-flash'), 300);
+                        if (navigator.vibrate) navigator.vibrate(100); // Vibración de éxito
 
-                            if (navigator.vibrate) navigator.vibrate(100);
-                            await procesarNuevoReactivo(cas);
-                            setTimeout(() => { isProcessing = false; }, 3000);
-                        }
+                        await procesarNuevoReactivo(casDetectado);
+
+                        // Pausa de 3 segundos para no escanear lo mismo mil veces
+                        setTimeout(() => { isProcessing = false; }, 3000);
                     }
-                } catch (e) { }
+                } catch (e) { console.error("Error OCR:", e); }
+
                 if (isScanning) requestAnimationFrame(cicloEscaneo);
             }
 
