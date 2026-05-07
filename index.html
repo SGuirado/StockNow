@@ -957,41 +957,52 @@
             }
 
 
+            let streamActual = null;
+
             async function iniciarCamara() {
                 const video = document.getElementById('video');
                 const modalCamara = document.getElementById('modalCamara');
 
-                // Limpieza preventiva
+                // 1. Limpieza total antes de empezar
                 if (streamActual) {
-                    streamActual.getTracks().forEach(t => t.stop());
+                    streamActual.getTracks().forEach(track => track.stop());
+                    streamActual = null;
                 }
 
                 try {
-                    // Pedimos cámara de la forma más básica posible
-                    const stream = await navigator.mediaDevices.getUserMedia({
+                    // 2. Intento flexible: Si es móvil pedirá la trasera, si es PC pedirá la que haya
+                    const constraints = {
                         video: { facingMode: "environment" },
                         audio: false
-                    });
+                    };
+
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
                     streamActual = stream;
                     video.srcObject = stream;
 
-                    // Atributos para iOS/Android
+                    // Atributos de compatibilidad
                     video.setAttribute("playsinline", true);
                     video.muted = true;
+                    video.play();
 
-                    // Solo mostramos el modal si el video realmente empieza a reproducirse
-                    video.onloadedmetadata = () => {
-                        video.play().then(() => {
-                            modalCamara.style.display = 'flex';
-                            requestAnimationFrame(escanear);
-                        });
-                    };
+                    modalCamara.style.display = 'flex';
+
+                    // 3. Iniciar bucle de escaneo
+                    requestAnimationFrame(escanear);
 
                 } catch (err) {
-                    console.error("Error acceso cámara:", err);
-                    // Este alert nos dirá el motivo real en el móvil
-                    alert("Error: " + err.name + "\nPor favor, asegúrate de estar en HTTPS y haber aceptado los permisos en el candado de la URL.");
+                    console.error("Error detallado:", err);
+                    // Si falla por "Overconstrained", intentamos sin ninguna restricción
+                    try {
+                        streamActual = await navigator.mediaDevices.getUserMedia({ video: true });
+                        video.srcObject = streamActual;
+                        video.play();
+                        modalCamara.style.display = 'flex';
+                        requestAnimationFrame(escanear);
+                    } catch (e) {
+                        alert("No se puede acceder a la cámara. Por favor, cierra otras pestañas que puedan estar usándola y refresca la página.");
+                    }
                 }
             }
 
@@ -1048,18 +1059,11 @@
                 const video = document.getElementById('video');
 
                 if (streamActual) {
-                    // 1. Pausar el video
-                    video.pause();
-                    // 2. Detener todas las pistas de la cámara
-                    streamActual.getTracks().forEach(track => {
-                        track.stop();
-                        console.log("Pista detenida:", track.label);
-                    });
-                    // 3. Limpiar el objeto de video
+                    // Detener pistas ANTES de limpiar el video
+                    streamActual.getTracks().forEach(track => track.stop());
                     video.srcObject = null;
                     streamActual = null;
                 }
-
                 modalCamara.style.display = 'none';
             }
 
