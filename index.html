@@ -955,6 +955,52 @@
             }
 
 
+            async function iniciarCamara() {
+                try {
+                    // Detenemos cualquier flujo previo si existe
+                    if (streamActual) {
+                        streamActual.getTracks().forEach(track => track.stop());
+                    }
+
+                    // CONFIGURACIÓN CRÍTICA: Forzamos la cámara trasera (environment)
+                    const constraints = {
+                        video: {
+                            facingMode: { exact: "environment" }, // Fuerza la trasera. Si falla, probar solo con "environment"
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+
+                    try {
+                        streamActual = await navigator.mediaDevices.getUserMedia(constraints);
+                    } catch (e) {
+                        // Si falla el modo 'exact', intentamos el modo flexible (algunos navegadores lo prefieren)
+                        console.warn("Fallo cámara exacta, intentando modo flexible...");
+                        streamActual = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: "environment" }
+                        });
+                    }
+
+                    const video = document.getElementById('video');
+                    video.srcObject = streamActual;
+
+                    // Atributos necesarios para que iOS (Safari) no abra el vídeo en pantalla completa
+                    video.setAttribute("playsinline", true);
+                    video.setAttribute("muted", true);
+
+                    video.play();
+
+                    document.getElementById('modalCamara').style.display = 'flex';
+                    // Iniciamos el bucle de escaneo
+                    requestAnimationFrame(escanear);
+
+                } catch (err) {
+                    console.error("Error acceso cámara:", err);
+                    alert("Error de cámara: " + err.name + ". Asegúrate de usar HTTPS y dar permisos.");
+                }
+            }
+
+
             async function toggleScanner() {
                 const btn = document.getElementById('btn-toggle');
                 if (!isScanning) {
