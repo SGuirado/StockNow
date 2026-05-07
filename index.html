@@ -865,7 +865,7 @@
 
 
         <div id="video-container">
-            <video id="video" autoplay playsinline></video>
+            <video id="video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
             <div class="scan-region"></div>
         </div>
 
@@ -959,52 +959,40 @@
                 const modalCamara = document.getElementById('modalCamara');
                 const video = document.getElementById('video');
 
-                try {
-                    // 1. Limpieza: Detener cualquier cámara abierta previamente
-                    if (streamActual) {
-                        streamActual.getTracks().forEach(track => track.stop());
+                // 1. Limpieza total de flujos anteriores
+                if (streamActual) {
+                    streamActual.getTracks().forEach(track => track.stop());
+                }
+
+                // 2. Intentamos primero lo más sencillo (Cámara trasera)
+                const opciones = [
+                    { video: { facingMode: { exact: "environment" } } }, // Intento 1: Trasera obligatoria
+                    { video: { facingMode: "environment" } },           // Intento 2: Trasera preferida
+                    { video: true }                                     // Intento 3: Cualquiera (último recurso)
+                ];
+
+                let errorFinal = null;
+
+                for (let opt of opciones) {
+                    try {
+                        streamActual = await navigator.mediaDevices.getUserMedia(opt);
+                        if (streamActual) break; // Si funciona, salimos del bucle
+                    } catch (e) {
+                        errorFinal = e;
+                        console.warn("Fallo con opción:", opt, e);
                     }
+                }
 
-                    // 2. Intentar primero con la configuración ideal (Cámara trasera forzada)
-                    const constraints = {
-                        video: {
-                            facingMode: { ideal: "environment" },
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        },
-                        audio: false
-                    };
-
-                    streamActual = await navigator.mediaDevices.getUserMedia(constraints);
+                if (streamActual) {
                     video.srcObject = streamActual;
-
-                    // 3. Atributos críticos para Safari/iOS y navegadores integrados
+                    // Atributos obligatorios para iOS/Android
                     video.setAttribute("playsinline", true);
-                    video.setAttribute("muted", true);
+                    video.muted = true;
                     video.play();
-
                     modalCamara.style.display = 'flex';
-
-                    // 4. Iniciar el escaneo (Asegúrate de que la función 'escanear' existe)
                     requestAnimationFrame(escanear);
-
-                } catch (err) {
-                    console.error("Error detallado:", err);
-
-                    // 5. Segundo intento: Configuración básica si la anterior falla
-                    if (err.name === 'OverconstrainedError' || err.name === 'NotFoundError') {
-                        try {
-                            streamActual = await navigator.mediaDevices.getUserMedia({ video: true });
-                            video.srcObject = streamActual;
-                            video.play();
-                            modalCamara.style.display = 'flex';
-                            requestAnimationFrame(escanear);
-                        } catch (segundoErr) {
-                            alert("Error fatal: No se puede acceder a ninguna cámara.");
-                        }
-                    } else {
-                        alert("Error de acceso: " + err.message + "\n\nPasos para solucionar:\n1. Ve al candado en la barra de direcciones.\n2. Pulsa 'Permisos' o 'Ajustes del sitio'.\n3. Dale permiso a la Cámara.");
-                    }
+                } else {
+                    alert("ERROR CRÍTICO DE CÁMARA:\n" + (errorFinal ? errorFinal.message : "No detectada"));
                 }
             }
 
