@@ -931,9 +931,9 @@
 
             let inventario = JSON.parse(localStorage.getItem('lab_inv_v5')) || [];
             let isScanning = false;
-            let videoStream = null;
             let worker = null;
             let isProcessing = false;
+            let streamActual = null; // Esta será la única variable para controlar la cámara
 
             // Función genérica para añadir opciones a cualquier desplegable
             function agregarOpcion(idSelect, nombreCampo) {
@@ -962,21 +962,12 @@
                 }
             }
 
-
-            let streamActual = null;
-
             async function iniciarCamara() {
                 const video = document.getElementById('video');
                 const modalCamara = document.getElementById('modalCamara');
 
-                // 1. Limpieza absoluta antes de intentar abrir
-                if (streamActual) {
-                    streamActual.getTracks().forEach(t => t.stop());
-                    streamActual = null;
-                }
-
                 try {
-                    // Usamos la configuración más básica para evitar conflictos de resolución
+                    // Pedimos permiso de video de forma básica
                     const stream = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: "environment" },
                         audio: false
@@ -985,18 +976,18 @@
                     streamActual = stream;
                     video.srcObject = stream;
 
-                    // Atributos para compatibilidad móvil
+                    // Atributos para que iOS no bloquee el video
                     video.setAttribute("playsinline", true);
                     video.muted = true;
 
-                    // Esperamos a que el hardware responda
-                    await video.play();
-                    modalCamara.style.display = 'flex';
-                    requestAnimationFrame(escanear);
-
+                    // Esperamos a que el video esté listo para mostrar el modal
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        modalCamara.style.display = 'flex';
+                        requestAnimationFrame(escanear); // Inicia el bucle de lectura
+                    };
                 } catch (err) {
-                    console.error("Fallo de cámara:", err);
-                    alert("No se puede abrir la cámara. Asegúrate de:\n1. Usar Chrome o Safari directamente.\n2. Estar en una conexión segura (HTTPS).\n3. No tener la cámara abierta en otra app.");
+                    alert("No se pudo abrir la cámara. Revisa si has dado permiso en el candado de la URL.");
                 }
             }
 
@@ -1053,15 +1044,15 @@
                 const video = document.getElementById('video');
 
                 if (streamActual) {
-                    // Orden correcto: primero pausar video, luego detener tracks, luego limpiar src
-                    video.pause();
-                    streamActual.getTracks().forEach(track => track.stop());
-                    video.srcObject = null;
-                    streamActual = null;
-                    console.log("Cámara cerrada y liberada correctamente.");
+                    video.pause(); // 1. Pausamos la imagen
+                    streamActual.getTracks().forEach(track => track.stop()); // 2. Apagamos el hardware
+                    video.srcObject = null; // 3. Desconectamos el video del flujo
+                    streamActual = null; // 4. Vaciamos la variable
                 }
                 modalCamara.style.display = 'none';
+                isScanning = false;
             }
+
             function detenerEscaneo() {
                 if (videoStream) videoStream.getTracks().forEach(t => t.stop());
                 document.getElementById('video-container').style.display = 'none';
