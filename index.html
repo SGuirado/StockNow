@@ -1032,33 +1032,40 @@
             }
             async function toggleScanner() {
                 const btn = document.getElementById('btn-toggle');
+                const video = document.getElementById('video');
+                const container = document.getElementById('video-container');
 
                 if (!isScanning) {
                     try {
-                        // Pedimos cámara trasera de forma sencilla
+                        // 1. Limpieza absoluta de cualquier intento anterior
+                        if (streamActual) {
+                            streamActual.getTracks().forEach(t => t.stop());
+                        }
+
+                        // 2. Pedir cámara trasera (environment)
                         streamActual = await navigator.mediaDevices.getUserMedia({
                             video: { facingMode: "environment" }
                         });
 
-                        const video = document.getElementById('video');
                         video.srcObject = streamActual;
-                        video.setAttribute("playsinline", true); // Obligatorio para iPhone
-                        video.play();
+                        video.setAttribute("playsinline", true); // Vital para iOS
+                        video.muted = true;
 
-                        document.getElementById('video-container').style.display = 'block';
+                        await video.play();
+                        container.style.display = 'block';
                         btn.innerText = "⏹️ DETENER";
                         btn.classList.add('active');
                         isScanning = true;
 
-                        // Inicializamos el trabajador de Tesseract si no existe
+                        // 3. Inicializar Tesseract si no existe
                         if (!worker) {
                             worker = await Tesseract.createWorker('eng');
                         }
 
-                        cicloEscaneo(); // Empezamos a buscar el número CAS
+                        cicloEscaneo();
                     } catch (e) {
-                        alert("Error al acceder a la cámara. Revisa los permisos.");
                         console.error(e);
+                        alert("ERROR DE CÁMARA: Pulsa el candado en la URL y asegúrate de que la Cámara esté en 'PERMITIR'.");
                     }
                 } else {
                     detenerEscaneo();
@@ -1081,7 +1088,10 @@
 
             function detenerEscaneo() {
                 if (streamActual) {
+                    const video = document.getElementById('video');
+                    video.pause(); // Pausamos primero para liberar el proceso
                     streamActual.getTracks().forEach(t => t.stop());
+                    video.srcObject = null;
                     streamActual = null;
                 }
                 document.getElementById('video-container').style.display = 'none';
