@@ -962,6 +962,34 @@
                 }
             }
 
+            function editarReactivo(index) {
+                const r = inventario[index];
+                if (!r) return;
+                document.getElementById('btn-toggle').onclick = () => procesarNuevoReactivo(r.cas);
+                if (document.getElementById('nombre')) document.getElementById('nombre').value = r.nombre || '';
+                if (document.getElementById('cas')) document.getElementById('cas').value = r.cas || '';
+                if (document.getElementById('ubicacion')) document.getElementById('ubicacion').value = r.ubicacion || 'Armario 1';
+                if (document.getElementById('estante')) document.getElementById('estante').value = r.estante || 'Estante 1';
+                if (document.getElementById('stock')) document.getElementById('stock').value = r.stock || '';
+
+                if (document.getElementById('unidad')) document.getElementById('unidad').value = r.unidad || 'g';
+                if (document.getElementById('referencia')) document.getElementById('referencia').value = r.referencia || '';
+                if (document.getElementById('caducidad')) document.getElementById('caducidad').value = r.caducidad || '';
+
+                // 3. ¡Truco importante!: Cambiamos el comportamiento del botón "Añadir"
+                // Le decimos que ahora su "modo" es EDITAR y guardamos el ID secreto de Firebase
+                const btnGuardar = document.querySelector('.btn-primary') || document.querySelector('.btn-main');
+                if (btnGuardar) {
+                    btnGuardar.dataset.mode = 'edit';
+                    btnGuardar.dataset.id = r.id; // Este es el ID único de la base de datos
+                    btnGuardar.innerText = '✅ ACTUALIZAR CAMBIOS';
+                    btnGuardar.style.backgroundColor = "#22c55e"; // Se pone verde para avisar
+                }
+
+                // 4. Subimos la pantalla automáticamente para ver el formulario relleno
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
             async function iniciarCamara() {
                 const video = document.getElementById('video');
                 const modalCamara = document.getElementById('modalCamara');
@@ -1186,15 +1214,31 @@
 
             // Nueva versión de procesarNuevoReactivo
             async function procesarNuevoReactivo(cas, reintento = false) {
+                const btnGuardar = document.getElementById('btn-toggle');
+                const esEdicion = btnGuardar.dataset.mode === 'edit';
+                const idEdicion = btnGuardar.dataset.id;
+
                 let item;
-                if (!reintento) {
+                if (esEdicion && idEdicion) {
+                    // CASO EDICIÓN: Buscamos el reactivo que ya existe en el inventario
+                    item = inventario.find(x => x.id == idEdicion || x.id_firebase == idEdicion);
+                    if (item) {
+                        item.nombre = "ACTUALIZANDO...";
+                        // Actualizamos los campos con lo que haya en los selectores ahora
+                        item.facultad = document.getElementById('selectFacultad').value;
+                        item.departamento = document.getElementById('selectDepto').value;
+                        item.laboratorio = document.getElementById('selectLab').value;
+                        item.ubicacion = document.getElementById('selectUbicacion').value;
+                    }
+                } else if (!reintento) {
+                    // CASO NUEVO: Lo que ya tenías (crear objeto desde cero)
                     item = {
                         id: Date.now(),
                         nombre: "BUSCANDO...",
                         cas: cas,
-                        ref: "",
-                        facultad: document.getElementById('selectFacultad').value,     // Añadir esta línea
-                        departamento: document.getElementById('selectDepto').value,    // Añadir esta línea
+                        // ... (el resto de tus campos iguales) ...
+                        facultad: document.getElementById('selectFacultad').value,
+                        departamento: document.getElementById('selectDepto').value,
                         laboratorio: document.getElementById('selectLab').value,
                         ubicacion: document.getElementById('selectUbicacion').value,
                         fallido: false,
@@ -1203,10 +1247,11 @@
                         cad_mes: "01",
                         cad_anio: "2026",
                         observaciones: "",
-                        ficha_url: "" // Nuevo campo para la ficha automática
+                        ficha_url: ""
                     };
                     inventario.unshift(item);
                 } else {
+                    // REINTENTO: Lo que ya tenías
                     item = inventario.find(x => x.cas === cas);
                     item.nombre = "REINTENTANDO...";
                     item.fallido = false;
@@ -1220,6 +1265,24 @@
 
                 actualizarStorage();
                 render();
+
+                // Si estábamos editando, guardamos en Firebase y reseteamos el botón
+                if (esEdicion && idEdicion) {
+                    try {
+                        await db.ref('inventario/' + idEdicion).update(item);
+
+                        // Limpiamos el botón para que vuelva a ser el escáner
+                        btnGuardar.dataset.mode = 'add';
+                        btnGuardar.dataset.id = '';
+                        btnGuardar.innerHTML = '<span style="font-size: 2.8rem;">📷</span> <span>SCAN</span>';
+                        btnGuardar.style.backgroundColor = "";
+                        btnGuardar.onclick = toggleScanner; // Devolvemos la función de la cámara
+
+                        alert("✅ Cambios guardados en la nube");
+                    } catch (e) {
+                        console.error("Error al sincronizar:", e);
+                    }
+                }
             }
 
             function render() {
