@@ -1019,7 +1019,7 @@
                         if (code) {
                             console.log("Código detectado:", code.data);
                             procesarEscaneo(code.data);
-                            cerrarCamara();
+                            detenerCamaraUniversal();
                             return; // Detenemos el bucle si hay éxito
                         }
                     }
@@ -1037,68 +1037,68 @@
 
                 if (!isScanning) {
                     try {
-                        // 1. Limpieza absoluta de cualquier intento anterior
+                        // Cerramos cualquier rastro previo
                         if (streamActual) {
                             streamActual.getTracks().forEach(t => t.stop());
                         }
 
-                        // 2. Pedir cámara trasera (environment)
+                        // Pedimos la cámara
                         streamActual = await navigator.mediaDevices.getUserMedia({
                             video: { facingMode: "environment" }
                         });
 
                         video.srcObject = streamActual;
-                        video.setAttribute("playsinline", true); // Vital para iOS
+                        video.setAttribute("playsinline", true);
                         video.muted = true;
 
+                        // Intentamos reproducir
                         await video.play();
+
+                        // Si llegamos aquí, todo ha ido bien: mostramos la interfaz
                         container.style.display = 'block';
                         btn.innerText = "⏹️ DETENER";
                         btn.classList.add('active');
                         isScanning = true;
 
-                        // 3. Inicializar Tesseract si no existe
                         if (!worker) {
                             worker = await Tesseract.createWorker('eng');
                         }
 
                         cicloEscaneo();
+
                     } catch (e) {
-                        console.error(e);
-                        alert("ERROR DE CÁMARA: Pulsa el candado en la URL y asegúrate de que la Cámara esté en 'PERMITIR'.");
+                        // Solo avisamos si después de intentar no hay flujo de vídeo
+                        if (!streamActual) {
+                            alert("No se pudo acceder a la cámara. Revisa los permisos en el candado de la URL.");
+                        }
                     }
                 } else {
-                    detenerEscaneo();
+                    detenerCamaraUniversal();
                 }
             }
 
-            function cerrarCamara() {
-                const modalCamara = document.getElementById('modalCamara');
+            // Una sola función para cerrar todo correctamente
+            function detenerCamaraUniversal() {
                 const video = document.getElementById('video');
+                const container = document.getElementById('video-container');
+                const modal = document.getElementById('modalCamara');
+                const btn = document.getElementById('btn-toggle');
 
                 if (streamActual) {
-                    video.pause(); // 1. Pausamos el video
-                    streamActual.getTracks().forEach(track => track.stop()); // 2. Apagamos el hardware
-                    video.srcObject = null; // 3. Desconectamos la fuente
-                    streamActual = null; // 4. Limpiamos la variable
-                }
-                modalCamara.style.display = 'none';
-                isScanning = false;
-            }
-
-            function detenerEscaneo() {
-                if (streamActual) {
-                    const video = document.getElementById('video');
-                    video.pause(); // Pausamos primero para liberar el proceso
+                    if (video) video.pause();
                     streamActual.getTracks().forEach(t => t.stop());
-                    video.srcObject = null;
+                    if (video) video.srcObject = null;
                     streamActual = null;
                 }
-                document.getElementById('video-container').style.display = 'none';
-                const btn = document.getElementById('btn-toggle');
-                btn.innerText = "📷 ESCANEAR CAS";
-                btn.classList.remove('active');
+
+                if (container) container.style.display = 'none';
+                if (modal) modal.style.display = 'none';
+                if (btn) {
+                    btn.innerText = "📷 ESCANEAR CAS";
+                    btn.classList.remove('active');
+                }
                 isScanning = false;
+                isProcessing = false;
             }
 
             async function cicloEscaneo() {
