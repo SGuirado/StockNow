@@ -35,8 +35,9 @@
 
         /* Fecha caducada en rojo */
         .caducado {
-            color: var(--danger);
+            color: #d91d1d;
             font-weight: bold;
+            text-decoration: underline;
         }
 
         /* Quitar fondo al icono del planeta */
@@ -266,9 +267,15 @@
             border-bottom: 2px solid #e2e8f0;
             color: #64748b;
             font-size: 10px;
+            cursor: pointer;
+            user-select: none;
+            /* Evita que se seleccione el texto al hacer click rápido */
         }
 
         td {
+            word-wrap: break-word;
+            /* Si el nombre del químico es muy largo, saltará de línea */
+            vertical-align: top;
             padding: 12px;
             border-bottom: 1px solid #f1f5f9;
         }
@@ -443,6 +450,7 @@
             display: flex;
             flex-direction: column;
             /* Asegura que el estante baje */
+            gap: 10px;
             width: 100%;
         }
 
@@ -541,6 +549,8 @@
             /* Asegúrate de que esté por encima de todo */
             align-items: center;
             justify-content: center;
+            z-index: 1000;
+            /* Nivel alto */
         }
 
         /* La caja blanca del buscador */
@@ -650,6 +660,19 @@
             filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.1));
         }
 
+        td span,
+        .warn-icon {
+            display: inline-block;
+            transition: transform 0.2s, filter 0.2s;
+            cursor: pointer;
+        }
+
+        td span:hover,
+        .warn-icon:hover {
+            transform: scale(1.3);
+            filter: drop-shadow(0 0 5px #003366);
+        }
+
         /* Ajuste de alineación para la tabla */
         table th,
         table td {
@@ -747,6 +770,8 @@
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            z-index: 2000;
+            /* Nivel más alto para que tape al buscador */
         }
 
 
@@ -763,6 +788,31 @@
         .tabla-reagentes td {
             padding: 12px 8px;
             text-align: left;
+        }
+
+        /* Efecto para los iconos (Emoji-botones) */
+        td span,
+        td button {
+            display: inline-block;
+            /* Necesario para que el escalado funcione bien */
+            transition: all 0.2s ease;
+            /* Hace que el movimiento sea suave */
+            cursor: pointer;
+        }
+
+        /* Cuando el cursor está encima del icono... */
+        td span:hover,
+        td button:hover {
+            transform: scale(1.3);
+            /* Aumenta un 30% el tamaño */
+            filter: drop-shadow(0 0 5px rgba(0, 51, 102, 0.5));
+            /* Iluminación suave azul */
+            opacity: 1;
+        }
+
+        th:active {
+            background-color: #e2e8f0;
+            /* Se oscurece un poco al hacer clic */
         }
     </style>
 
@@ -897,14 +947,10 @@
             <div class="table-container">
                 <table id="tablaReactivos">
                     <thead>
-                        <tr>
-                            <th style="text-align: center; padding-bottom: 5px; width: 60px;">Info</th>
-                            <th onclick="ordenarPor('nombre')" style="width: 180px; " cursor:pointer">Reactivo</th>
-                            <th onclick="ordenarPor('ubicacion')" style="width: 40px; " cursor:pointer">Ubicación</th>
-                            <th onclick="ordenarPor('stock')" style="width: 40px; " cursor:pointer; text-align:
-                                center;">
-                                Stock</th>
-                            <th onclick="ordenarPor('ref')" style=" cursor:pointer">Ref./Cad.</th>
+                        <tr style="font-size: 0.85rem; color: #64748b; text-align: left;">
+                            <th style="padding: 10px; width: 60px; text-align: center;">Info</th>
+                            <th onclick="ordenarPor('nombre')" style="padding: 10px; width: 85px;">Reactivo / Stock</th>
+                            <th onclick="ordenarPor('cad')" style="padding: 10px;">Caducidad</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpoTabla"></tbody>
@@ -1109,7 +1155,6 @@
                 const mesActual = ahora.getMonth() + 1;
                 const anioActual = ahora.getFullYear();
 
-                // 1. Obtener valores de los filtros superiores
                 const filtroFacultad = document.getElementById('selectFacultad').value;
                 const filtroDepto = document.getElementById('selectDepto').value;
                 const filtroLab = document.getElementById('selectLab').value;
@@ -1117,64 +1162,42 @@
 
                 const tbody = document.getElementById('cuerpoTabla');
 
-                // 2. Filtrar el inventario antes de mapear
                 const inventarioFiltrado = inventario.filter(r => {
-                    // Si "Mostrar todo" está marcado, devolvemos true para todos
                     if (mostrarTodo) return true;
-
-                    // Si no, aplicamos la lógica de filtros habitual
                     const coincideFacultad = !r.facultad || r.facultad === filtroFacultad;
                     const coincideDepto = !r.departamento || r.departamento === filtroDepto;
                     const coincideLab = !r.laboratorio || r.laboratorio === filtroLab;
                     return coincideFacultad && coincideDepto && coincideLab;
                 });
 
-                // 3. Dibujar solo los elementos filtrados
                 tbody.innerHTML = inventarioFiltrado.map(r => {
-                    // Calculamos si está caducado
+                    // Cálculo de caducidad
                     const esCaducado = (parseInt(r.cad_anio) < anioActual) ||
                         (parseInt(r.cad_anio) === anioActual && parseInt(r.cad_mes) < mesActual);
 
-                    // Definimos el estilo para la fecha (rojo si caduca, gris si no)
-                    const estiloFecha = esCaducado
-                        ? 'color: var(--danger); font-weight: bold;'
-                        : 'color: #64748b;';
-
                     return `
 <tr style="border-bottom: 1px solid #e2e8f0;">
-    <td style="text-align: center; white-space: nowrap; padding: 6px 2px !important;">
-        <span class="col-view" onclick="verFicha(${r.id})" style="cursor:pointer; font-size:1.2rem;" title="Ver ficha">👁️</span>
-        ${r.ficha_url
-                            ? `<span onclick="window.open('${r.ficha_url}','_blank')" style="cursor:pointer; font-size:1rem; margin-left:2px;" title="Ficha de Seguridad">📋</span>`
-                            : ''
-                        }
+    <td style="text-align: center; padding: 10px 5px;">
+        <span onclick="verFicha(${r.id})" style="cursor:pointer; font-size:1.2rem;">👁️</span>
+        ${r.ficha_url ? `<span onclick="window.open('${r.ficha_url}','_blank')" style="cursor:pointer; font-size:1rem; margin-left:4px;">📋</span>` : ''}
         ${(r.fallido || r.nombre.includes("BUSCANDO") || r.nombre === r.cas)
-                            ? `<span class="warn-icon" onclick="procesarNuevoReactivo('${r.cas}', true)" style="cursor:pointer; font-size:1rem; margin-left:2px;">⚠️</span>`
-                            : ''
-                        }
+                            ? `<span onclick="procesarNuevoReactivo('${r.cas}', true)" style="cursor:pointer; font-size:1rem; margin-left:4px;">⚠️</span>` : ''}
     </td>
 
-    <td style="padding-left: 0 !important;">
-        <div style="font-weight: bold; color: var(--primary); line-height: 1.1;">${r.nombre}</div>
-        <div style="font-size: 0.75rem; color: #64748b;">${r.cas}</div>
-    </td>
-
-    <td style="padding-right: 0 !important;">
-        <div style="font-size: 0.8rem; line-height: 1.1;">${r.ubicacion}</div>
-        <div style="font-size: 0.7rem; color: #64748b;">${r.estante || '-'}</div>
-    </td>
-
-    <td style="text-align: center; padding: 6px 0 !important;">
-        <div style="font-weight: bold; color: var(--primary);">${r.stock || 1}<small>ud</small></div>
-        <div style="font-size: 0.7rem; color: #64748b;">${r.cantidad}${r.unidad}</div>
-    </td>
-
-    <td style="padding: 6px 4px !important; text-align: left;">
-        <div style="font-weight: bold; color: var(--primary); font-family: monospace; font-size: 0.75rem;">
-            ${r.ref || '-'}
+    <td style="padding: 10px 5px;">
+        <div style="font-weight: bold; color: var(--primary); line-height: 1.2; font-size: 0.9rem;">${r.nombre}</div>
+        <div style="font-size: 0.8rem; color: #1e293b; margin-top: 2px;">
+            Stock: <strong>${r.cantidad}${r.unidad}</strong> 
+            <span style="color: #64748b; font-size: 0.7rem;">(${r.stock || 1} ud)</span>
         </div>
-        <div style="font-size: 0.75rem; ${esCaducado ? 'color:var(--danger); font-weight:bold;' : 'color:#64748b;'}">
+    </td>
+
+    <td style="padding: 10px 5px;">
+        <div style="font-size: 0.85rem; ${esCaducado ? 'color:var(--danger); font-weight:bold;' : 'color:var(--primary); font-weight:500;'}">
             Exp: ${r.cad_mes}/${r.cad_anio}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+            ${r.ubicacion} (${r.estante || '-'})
         </div>
     </td>
 </tr>
@@ -1378,16 +1401,36 @@
                 });
             }
 
-            function ordenarPor(campo) {
-                inventario.sort((a, b) => {
-                    let valA = (a[campo] || "").toString().toLowerCase();
-                    let valB = (b[campo] || "").toString().toLowerCase();
-                    if (ordenAscendente) return valA > valB ? 1 : -1;
-                    return valA < valB ? 1 : -1;
-                });
+
+            function ordenarPor(columna) {
                 ordenAscendente = !ordenAscendente;
-                render();
+
+                inventario.sort((a, b) => {
+                    let valorA, valorB;
+                    if (columna === 'nombre') {
+                        valorA = (a.nombre || "").toLowerCase();
+                        valorB = (b.nombre || "").toLowerCase();
+                    } else if (columna === 'cad') {
+                        // Esto asegura que ordene por fecha real
+                        valorA = parseInt((a.cad_anio || "0") + (a.cad_mes || "0").toString().padStart(2, '0'));
+                        valorB = parseInt((b.cad_anio || "0") + (b.cad_mes || "0").toString().padStart(2, '0'));
+                    }
+
+                    if (valorA < valorB) return ordenAscendente ? -1 : 1;
+                    if (valorA > valorB) return ordenAscendente ? 1 : -1;
+                    return 0;
+                });
+
+                render(); // Actualiza la tabla principal
+
+                // ESTO ES LO QUE ESTÁ FALLANDO:
+                // Debes llamar a la función de búsqueda para que lea el inventario ya ordenado
+                // Pero solo si el buscador está abierto
+                if (document.getElementById('buscadorModal').style.display === 'flex') {
+                    filtrarBusquedaRealTime();
+                }
             }
+
 
             // Este código hace que la pantalla se actualice sola cuando el móvil envía algo
             db.ref('inventario').on('value', (snapshot) => {
@@ -1442,37 +1485,32 @@
                     const estiloFecha = esCaducado ? 'color:var(--danger); font-weight:bold;' : 'color:#64748b;';
 
                     return `
-        <tr style="border-bottom: 1px solid #f1f5f9;">
-        <td style="text-align: center; width: 55px; padding: 10px 2px; white-space: nowrap;">
-            <span onclick="verFicha(${r.id}); cerrarBuscador();" style="cursor:pointer; font-size:1.2rem;" title="Ver ficha">👁️</span>
-            
-            ${r.ficha_url
-                            ? `<span onclick="window.open('${r.ficha_url}','_blank')" style="cursor:pointer; font-size:1rem; margin-left:2px;" title="Ficha de Seguridad">📋</span>`
-                            : '<span style="display:inline-block; width:1rem; margin-left:4px;"></span>'
-                        }
-        </td>
+<tr style="border-bottom: 1px solid #e2e8f0;">
+    <td style="text-align: center; padding: 10px 5px;">
+        <span onclick="verFicha(${r.id})" style="cursor:pointer; font-size:1.2rem;">👁️</span>
+        ${r.ficha_url ? `<span onclick="window.open('${r.ficha_url}','_blank')" style="cursor:pointer; font-size:1rem; margin-left:4px;">📋</span>` : ''}
+        ${(r.fallido || r.nombre.includes("BUSCANDO") || r.nombre === r.cas)
+                            ? `<span onclick="procesarNuevoReactivo('${r.cas}', true)" style="cursor:pointer; font-size:1rem; margin-left:4px;">⚠️</span>` : ''}
+    </td>
 
-        <td style="padding: 10px 4px; cursor: pointer;" onclick="verFicha(${r.id}); cerrarBuscador();">
-            <div style="font-weight: bold; color: var(--primary); font-size: 0.85rem; line-height: 1.1;">${r.nombre}</div>
-            <div style="font-size: 0.75rem; color: #64748b;">${r.cas}</div>
-        </td>
+    <td style="padding: 10px 5px;">
+        <div style="font-weight: bold; color: var(--primary); line-height: 1.2; font-size: 0.9rem;">${r.nombre}</div>
+        <div style="font-size: 0.8rem; color: #1e293b; margin-top: 2px;">
+            Stock: <strong>${r.cantidad}${r.unidad}</strong> 
+            <span style="color: #64748b; font-size: 0.7rem;">(${r.stock || 1} ud)</span>
+        </div>
+    </td>
 
-            <td style="width: 75px; padding: 10px 4px;">
-                <div style="font-size: 0.8rem; line-height: 1.1;">${r.ubicacion}</div>
-                <div style="font-size: 0.7rem; color: #64748b;">${r.estante || '-'}</div>
-            </td>
-
-            <td style="width: 50px; text-align: center; padding: 10px 2px;">
-                <div style="font-weight: bold; color: var(--primary); font-size: 0.85rem;">${r.stock || 1}<small>ud</small></div>
-                <div style="font-size: 0.7rem; color: #64748b;">${r.cantidad}${r.unidad}</div>
-            </td>
-
-            <td style="width: 80px; padding: 10px 4px; font-size: 0.8rem;">
-                <div style="font-weight: bold; color: var(--primary); font-family: monospace;">${r.ref || '-'}</div>
-                <div style=${estiloFecha}">Exp: ${r.cad_mes}/${r.cad_anio}</div>
-            </td>
-        </tr>
-        `;
+    <td style="padding: 10px 5px;">
+        <div style="font-size: 0.85rem; ${esCaducado ? 'color:var(--danger); font-weight:bold;' : 'color:var(--primary); font-weight:500;'}">
+            Exp: ${r.cad_mes}/${r.cad_anio}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+            ${r.ubicacion} (${r.estante || '-'})
+        </div>
+    </td>
+</tr>
+`;
                 }).join('');
             }
 
@@ -1609,21 +1647,23 @@
                     </button>
                 </div>
 
-                <div class="search-results" style="flex: 1; overflow-y: auto; padding: 10px;">
-                    <table id="tablaResultadosBusqueda" style="width: 100%; border-collapse: collapse;">
-                        <thead
-                            style="position: sticky; top: 0; background: white; z-index: 10; border-bottom: 2px solid #e2e8f0;">
-                            <tr style="font-size: 0.75rem; color: #64748b; text-align: left;">
-                                <th style="text-align: center; padding-bottom: 5px;">Info</th>
-                                <th style="padding-bottom: 5px;">Reactivo</th>
-                                <th style="padding-bottom: 5px;">Ubic.</th>
-                                <th style="text-align: center; padding-bottom: 5px;">Stock</th>
-                                <th style="padding-bottom: 5px;">Ref/Cad</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cuerpoResultadosBusqueda">
-                        </tbody>
-                    </table>
+
+                <div style="overflow-x:auto;">
+                    <div class="search-results">
+                        <table id="tablaResultadosBusqueda" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="font-size: 0.85rem; color: #64748b; text-align: left;">
+                                    <th style="padding: 10px; width: 60px; text-align: center;">Info</th>
+                                    <th onclick="ordenarPor('nombre')"
+                                        style="padding: 10px; width: 85px; cursor: pointer;">Reactivo / Stock</th>
+                                    <th onclick="ordenarPor('cad')" style="padding: 10px; cursor: pointer;">Caducidad
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="cuerpoResultadosBusqueda">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
