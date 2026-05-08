@@ -879,11 +879,10 @@
 
         <div
             style="width: 50%; min-width: 280px; margin: 10px auto; display: flex; align-items: center; gap: 15px; justify-content: center;">
-
-            <button id="start-btn" class="btn-export" onclick="toggleScanner()"
+            <button id="btn-toggle" class="btn-export" onclick="toggleScanner()"
                 style="flex: 3; height: 70px; font-size: 2.3rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; border-radius: 40px;">
                 <span style="font-size: 2.8rem; line-height: 1;">📷</span>
-                <span>SCAN</span>
+                <span id="text-btn">SCAN</span>
             </button>
 
             <button onclick="abrirModalManual()"
@@ -1030,6 +1029,7 @@
                     requestAnimationFrame(escanear);
                 }
             }
+
             async function toggleScanner() {
                 const btn = document.getElementById('btn-toggle');
                 const video = document.getElementById('video');
@@ -1037,43 +1037,32 @@
 
                 if (!isScanning) {
                     try {
-                        // Limpieza total antes de empezar
-                        if (streamActual) {
-                            streamActual.getTracks().forEach(t => t.stop());
-                        }
-
-                        // Pedimos la cámara de forma sencilla
-                        const stream = await navigator.mediaDevices.getUserMedia({
+                        streamActual = await navigator.mediaDevices.getUserMedia({
                             video: { facingMode: "environment" }
                         });
 
-                        streamActual = stream;
-                        video.srcObject = stream;
+                        video.srcObject = streamActual;
                         video.setAttribute("playsinline", true);
-                        video.muted = true;
-
-                        // Forzamos el play y esperamos a que responda
                         await video.play();
 
-                        // Si llegamos aquí sin ir al 'catch', todo está OK
                         container.style.display = 'block';
-                        btn.innerText = "⏹️ DETENER";
-                        btn.classList.add('active');
+
+                        // Cambiamos el estilo del botón para indicar que está activo
+                        btn.innerHTML = '<span style="font-size: 2.8rem;">⏹️</span> <span>PARAR</span>';
+                        btn.style.backgroundColor = "#d91d1d"; // Rojo
+
                         isScanning = true;
 
+                        // Iniciamos Tesseract
                         if (!worker) {
                             worker = await Tesseract.createWorker('eng');
                         }
 
-                        cicloEscaneo();
+                        cicloEscaneo(); // ¡IMPORTANTE! Esto activa el reconocimiento
 
                     } catch (e) {
-                        // Solo avisamos si el stream no se creó. 
-                        // Si el stream existe, ignoramos el error porque la cámara se abrirá igual.
-                        if (!streamActual) {
-                            console.warn("Reintentando o esperando permisos...");
-                            // No lanzamos alert aquí para no interrumpir al usuario
-                        }
+                        console.error(e);
+                        alert("No se pudo activar la cámara");
                     }
                 } else {
                     detenerCamaraUniversal();
@@ -1082,23 +1071,22 @@
 
             function detenerCamaraUniversal() {
                 const video = document.getElementById('video');
+                const btn = document.getElementById('btn-toggle');
+                const container = document.getElementById('video-container');
 
                 if (streamActual) {
-                    if (video) video.pause(); // Parar imagen
-                    streamActual.getTracks().forEach(t => t.stop()); // Apagar sensor
-                    if (video) video.srcObject = null; // Desconectar
+                    video.pause();
+                    streamActual.getTracks().forEach(t => t.stop());
+                    video.srcObject = null;
                     streamActual = null;
                 }
 
-                document.getElementById('video-container').style.display = 'none';
-                if (document.getElementById('modalCamara')) {
-                    document.getElementById('modalCamara').style.display = 'none';
-                }
+                if (container) container.style.display = 'none';
 
-                const btn = document.getElementById('btn-toggle');
                 if (btn) {
-                    btn.innerText = "📷 ESCANEAR CAS";
-                    btn.classList.remove('active');
+                    // Restauramos el botón a su estado original (Azul y con "SCAN")
+                    btn.innerHTML = '<span style="font-size: 2.8rem;">📷</span> <span>SCAN</span>';
+                    btn.style.backgroundColor = "var(--primary)";
                 }
 
                 isScanning = false;
@@ -1110,42 +1098,46 @@
             function detenerEscaneo() { detenerCamaraUniversal(); }
 
             async function cicloEscaneo() {
-                if (!isScanning || isProcessing) {
+                if (!isScanning || isProcessing || !streamActual) {
                     if (isScanning) requestAnimationFrame(cicloEscaneo);
                     return;
                 }
 
                 const video = document.getElementById('video');
                 const canvas = document.getElementById('canvas-proc');
-                if (!canvas) return;
-
                 const ctx = canvas.getContext('2d');
-                const scale = video.videoWidth / video.clientWidth;
 
-                canvas.width = video.videoWidth * 0.9;
-                canvas.height = 180 * scale;
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const scale = video.videoWidth / video.clientWidth;
+                    canvas.width = video.videoWidth * 0.9;
+                    canvas.height = 180 * scale;
 
-                // Filtro para mejorar la lectura del texto (Blanco y negro con contraste)
-                ctx.filter = 'contrast(1.6) grayscale(1)';
-                ctx.drawImage(video, (video.videoWidth - canvas.width) / 2, (video.videoHeight - canvas.height) / 2, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+                    // Dibujamos lo que ve la cámara en el canvas interno
+                    ctx.filter = 'contrast(1.6) grayscale(1)';
+                    ctx.drawImage(video, (video.videoWidth - canvas.width) / 2, (video.videoHeight - canvas.height) / 2, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 
-                try {
-                    const { data: { text } } = await worker.recognize(canvas);
-                    // Expresión regular para encontrar el formato de un número CAS
-                    const match = text.match(/(\d{2,7}-\d{2}-\d)/);
+                    try {
+                        const { data: { text } } = await worker.recognize(canvas);
+                        // Buscamos el patrón: de 2 a 7 números - 2 números - 1 número
+                        const match = text.match(/(\d{2,7}-\d{2}-\d)/);
 
-                    if (match) {
-                        const casDetectado = match[1].trim();
-                        isProcessing = true;
+                        if (match) {
+                            isProcessing = true;
+                            const casEncontrado = match[1].trim();
+                            console.log("CAS Detectado:", casEncontrado);
 
-                        if (navigator.vibrate) navigator.vibrate(100); // Vibración de éxito
+                            if (navigator.vibrate) navigator.vibrate(100);
 
-                        await procesarNuevoReactivo(casDetectado);
+                            // Llamamos a tu función para buscar en la base de datos
+                            await procesarNuevoReactivo(casEncontrado);
 
-                        // Pausa de 3 segundos para no escanear lo mismo mil veces
-                        setTimeout(() => { isProcessing = false; }, 3000);
+                            // Esperamos 3 segundos antes de permitir otro escaneo para evitar duplicados
+                            setTimeout(() => { isProcessing = false; }, 3000);
+                        }
+                    } catch (e) {
+                        console.error("Error en OCR:", e);
                     }
-                } catch (e) { console.error("Error OCR:", e); }
+                }
 
                 if (isScanning) requestAnimationFrame(cicloEscaneo);
             }
