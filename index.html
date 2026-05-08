@@ -7,7 +7,6 @@
     <title>
         <title>TraceReagents</title>
         <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
         <style>
             :root {
                 /* Colores Universidad de Málaga */
@@ -843,46 +842,40 @@
                     laboratorio</span>
             </label>
 
-            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
-                <div>
-                    <label
-                        style="display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary);">Ubicación
-                        (Armario):</label>
-                    <select id="ubicacion" class="input-field" style="width: 100%;">
-                        <option value="Armario 1">Armario 1</option>
-                        <option value="Armario 2">Armario 2</option>
-                        <option value="Armario 3">Armario 3</option>
-                        <option value="Nevera">Nevera</option>
-                        <option value="Congelador">Congelador</option>
+            <div style="display: flex; gap: 10px; width: 50%;">
+                <div class="input-with-btn" style="flex: 1;">
+                    <select id="selectUbicacion" style="width: 50%;">
+                        <option>Armario A1</option>
+                        <option>Armario A2</option>
                     </select>
+                    <button onclick="agregarOpcion('selectUbicacion', 'Ubicación')"
+                        class="btn-system btn-nueva">+</button>
                 </div>
-                <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary);">Estante
-                        / Balda:</label>
-                    <select id="estante" class="input-field" style="width: 100%;">
+
+                <div class="input-with-btn" style="flex: 1;">
+                    <select id="selectEstante" style="width: 50%;">
                         <option value="Estante 1">Estante 1</option>
                         <option value="Estante 2">Estante 2</option>
                         <option value="Estante 3">Estante 3</option>
-                        <option value="Estante 4">Estante 4</option>
-                        <option value="Cajón">Cajón</option>
                     </select>
+                    <button onclick="agregarOpcion('selectEstante', 'Estante')" class="btn-system btn-nueva">+</button>
                 </div>
             </div>
         </div>
 
 
         <div id="video-container">
-            <video id="video" autoplay playsinline muted
-                style="width: 100%; height: 100%; object-fit: cover; background: black;"></video>
+            <video id="video" autoplay playsinline></video>
             <div class="scan-region"></div>
         </div>
 
         <div
             style="width: 50%; min-width: 280px; margin: 10px auto; display: flex; align-items: center; gap: 15px; justify-content: center;">
-            <button id="btn-toggle" class="btn-export" onclick="toggleScanner()"
+
+            <button id="start-btn" class="btn-export" onclick="toggleScanner()"
                 style="flex: 3; height: 70px; font-size: 2.3rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; border-radius: 40px;">
                 <span style="font-size: 2.8rem; line-height: 1;">📷</span>
-                <span id="text-btn">SCAN</span>
+                <span>SCAN</span>
             </button>
 
             <button onclick="abrirModalManual()"
@@ -930,10 +923,9 @@
 
             let inventario = JSON.parse(localStorage.getItem('lab_inv_v5')) || [];
             let isScanning = false;
-            let streamActual = null; // Esta será la única variable para controlar la cámara
+            let videoStream = null;
             let worker = null;
             let isProcessing = false;
-
 
             // Función genérica para añadir opciones a cualquier desplegable
             function agregarOpcion(idSelect, nombreCampo) {
@@ -962,211 +954,66 @@
                 }
             }
 
-            function editarReactivo(index) {
-                const r = inventario[index];
-                if (!r) return;
-                document.getElementById('btn-toggle').onclick = () => procesarNuevoReactivo(r.cas);
-                if (document.getElementById('nombre')) document.getElementById('nombre').value = r.nombre || '';
-                if (document.getElementById('cas')) document.getElementById('cas').value = r.cas || '';
-                if (document.getElementById('ubicacion')) document.getElementById('ubicacion').value = r.ubicacion || 'Armario 1';
-                if (document.getElementById('estante')) document.getElementById('estante').value = r.estante || 'Estante 1';
-                if (document.getElementById('stock')) document.getElementById('stock').value = r.stock || '';
-
-                if (document.getElementById('unidad')) document.getElementById('unidad').value = r.unidad || 'g';
-                if (document.getElementById('referencia')) document.getElementById('referencia').value = r.referencia || '';
-                if (document.getElementById('caducidad')) document.getElementById('caducidad').value = r.caducidad || '';
-
-                // 3. ¡Truco importante!: Cambiamos el comportamiento del botón "Añadir"
-                // Le decimos que ahora su "modo" es EDITAR y guardamos el ID secreto de Firebase
-                const btnGuardar = document.querySelector('.btn-primary') || document.querySelector('.btn-main');
-                if (btnGuardar) {
-                    btnGuardar.dataset.mode = 'edit';
-                    btnGuardar.dataset.id = r.id; // Este es el ID único de la base de datos
-                    btnGuardar.innerText = '✅ ACTUALIZAR CAMBIOS';
-                    btnGuardar.style.backgroundColor = "#22c55e"; // Se pone verde para avisar
-                }
-
-                // 4. Subimos la pantalla automáticamente para ver el formulario relleno
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-
-            async function iniciarCamara() {
-                const video = document.getElementById('video');
-                const modalCamara = document.getElementById('modalCamara');
-
-                // Si ya había una cámara abierta, la cerramos bien antes de empezar
-                if (streamActual) {
-                    streamActual.getTracks().forEach(t => t.stop());
-                }
-
-                try {
-                    // Pedimos la cámara trasera de la forma más sencilla posible
-                    streamActual = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: "environment" },
-                        audio: false
-                    });
-
-                    video.srcObject = streamActual;
-
-                    // Atributos obligatorios para iOS y Android
-                    video.setAttribute("playsinline", true);
-                    video.muted = true;
-
-                    await video.play();
-                    modalCamara.style.display = 'flex';
-
-                    // Iniciamos el bucle de escaneo QR
-                    requestAnimationFrame(escanear);
-
-                } catch (err) {
-                    console.error("Error de cámara:", err);
-                    alert("No se pudo activar la cámara. Asegúrate de estar en HTTPS y dar permisos en el candado de la URL.");
-                }
-            }
-
-
-            function escanear() {
-                const video = document.getElementById('video');
-                const canvas = document.getElementById('canvas');
-                const context = canvas.getContext('2d', { willReadFrequently: true });
-
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.height = video.videoHeight;
-                    canvas.width = video.videoWidth;
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-                    // Verificamos si la librería jsQR está cargada
-                    if (typeof jsQR !== 'undefined') {
-                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                            inversionAttempts: "dontInvert",
-                        });
-
-                        if (code) {
-                            console.log("Código detectado:", code.data);
-                            procesarEscaneo(code.data);
-                            detenerCamaraUniversal();
-                            return; // Detenemos el bucle si hay éxito
-                        }
-                    }
-                }
-
-                // Si el modal sigue visible, seguimos escaneando
-                if (document.getElementById('modalCamara').style.display === 'flex') {
-                    requestAnimationFrame(escanear);
-                }
-            }
 
             async function toggleScanner() {
                 const btn = document.getElementById('btn-toggle');
-                const video = document.getElementById('video');
-                const container = document.getElementById('video-container');
-
                 if (!isScanning) {
                     try {
-                        streamActual = await navigator.mediaDevices.getUserMedia({
-                            video: { facingMode: "environment" }
-                        });
-
-                        video.srcObject = streamActual;
-                        video.setAttribute("playsinline", true);
-                        await video.play();
-
-                        container.style.display = 'block';
-
-                        // Cambiamos el estilo del botón para indicar que está activo
-                        btn.innerHTML = '<span style="font-size: 2.8rem;">⏹️</span> <span>PARAR</span>';
-                        btn.style.backgroundColor = "#d91d1d"; // Rojo
-
+                        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                        document.getElementById('video').srcObject = videoStream;
+                        document.getElementById('video-container').style.display = 'block';
+                        btn.innerText = "⏹️ DETENER"; btn.classList.add('active');
                         isScanning = true;
-
-                        // Iniciamos Tesseract
-                        if (!worker) {
-                            worker = await Tesseract.createWorker('eng');
-                        }
-
-                        cicloEscaneo(); // ¡IMPORTANTE! Esto activa el reconocimiento
-
-                    } catch (e) {
-                        console.error(e);
-                        alert("No se pudo activar la cámara");
-                    }
-                } else {
-                    detenerCamaraUniversal();
-                }
+                        if (!worker) worker = await Tesseract.createWorker('eng');
+                        cicloEscaneo();
+                    } catch (e) { alert("Error de cámara"); }
+                } else { detenerEscaneo(); }
             }
 
-            function detenerCamaraUniversal() {
-                const video = document.getElementById('video');
-                const btn = document.getElementById('btn-toggle');
-                const container = document.getElementById('video-container');
-
-                if (streamActual) {
-                    video.pause();
-                    streamActual.getTracks().forEach(t => t.stop());
-                    video.srcObject = null;
-                    streamActual = null;
-                }
-
-                if (container) container.style.display = 'none';
-
-                if (btn) {
-                    // Restauramos el botón a su estado original (Azul y con "SCAN")
-                    btn.innerHTML = '<span style="font-size: 2.8rem;">📷</span> <span>SCAN</span>';
-                    btn.style.backgroundColor = "var(--primary)";
-                }
-
+            function detenerEscaneo() {
+                if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+                document.getElementById('video-container').style.display = 'none';
+                document.getElementById('btn-toggle').innerText = "📷 ESCANEAR CAS";
+                document.getElementById('btn-toggle').classList.remove('active');
                 isScanning = false;
-                isProcessing = false;
             }
-
-            // Redirigir funciones antiguas a la nueva
-            function cerrarCamara() { detenerCamaraUniversal(); }
-            function detenerEscaneo() { detenerCamaraUniversal(); }
 
             async function cicloEscaneo() {
-                if (!isScanning || isProcessing || !streamActual) {
-                    if (isScanning) requestAnimationFrame(cicloEscaneo);
-                    return;
-                }
-
+                if (!isScanning || isProcessing) { requestAnimationFrame(cicloEscaneo); return; }
                 const video = document.getElementById('video');
                 const canvas = document.getElementById('canvas-proc');
                 const ctx = canvas.getContext('2d');
+                const scale = video.videoWidth / video.clientWidth;
+                canvas.width = video.videoWidth * 0.9;
+                canvas.height = 180 * scale;
+                ctx.filter = 'contrast(1.6) grayscale(1)';
+                ctx.drawImage(video, (video.videoWidth - canvas.width) / 2, (video.videoHeight - canvas.height) / 2, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    const scale = video.videoWidth / video.clientWidth;
-                    canvas.width = video.videoWidth * 0.9;
-                    canvas.height = 180 * scale;
-
-                    // Dibujamos lo que ve la cámara en el canvas interno
-                    ctx.filter = 'contrast(1.6) grayscale(1)';
-                    ctx.drawImage(video, (video.videoWidth - canvas.width) / 2, (video.videoHeight - canvas.height) / 2, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-
-                    try {
-                        const { data: { text } } = await worker.recognize(canvas);
-                        // Buscamos el patrón: de 2 a 7 números - 2 números - 1 número
-                        const match = text.match(/(\d{2,7}-\d{2}-\d)/);
-
-                        if (match) {
+                try {
+                    const { data: { text } } = await worker.recognize(canvas);
+                    const match = text.match(/(\d{2,7}-\d{2}-\d)/);
+                    if (match) {
+                        const cas = match[1].trim();
+                        if (!inventario.length || inventario[0].cas !== cas) {
                             isProcessing = true;
-                            const casEncontrado = match[1].trim();
-                            console.log("CAS Detectado:", casEncontrado);
+
+                            // EFECTO VISUAL DE DESTELLO
+                            let flashDiv = document.getElementById('flash-effect');
+                            if (!flashDiv) {
+                                flashDiv = document.createElement('div');
+                                flashDiv.id = 'flash-effect';
+                                flashDiv.className = 'flash-capture';
+                                document.getElementById('video-container').appendChild(flashDiv);
+                            }
+                            flashDiv.classList.add('do-flash');
+                            setTimeout(() => flashDiv.classList.remove('do-flash'), 300);
 
                             if (navigator.vibrate) navigator.vibrate(100);
-
-                            // Llamamos a tu función para buscar en la base de datos
-                            await procesarNuevoReactivo(casEncontrado);
-
-                            // Esperamos 3 segundos antes de permitir otro escaneo para evitar duplicados
+                            await procesarNuevoReactivo(cas);
                             setTimeout(() => { isProcessing = false; }, 3000);
                         }
-                    } catch (e) {
-                        console.error("Error en OCR:", e);
                     }
-                }
-
+                } catch (e) { }
                 if (isScanning) requestAnimationFrame(cicloEscaneo);
             }
 
@@ -1214,31 +1061,15 @@
 
             // Nueva versión de procesarNuevoReactivo
             async function procesarNuevoReactivo(cas, reintento = false) {
-                const btnGuardar = document.getElementById('btn-toggle');
-                const esEdicion = btnGuardar.dataset.mode === 'edit';
-                const idEdicion = btnGuardar.dataset.id;
-
                 let item;
-                if (esEdicion && idEdicion) {
-                    // CASO EDICIÓN: Buscamos el reactivo que ya existe en el inventario
-                    item = inventario.find(x => x.id == idEdicion || x.id_firebase == idEdicion);
-                    if (item) {
-                        item.nombre = "ACTUALIZANDO...";
-                        // Actualizamos los campos con lo que haya en los selectores ahora
-                        item.facultad = document.getElementById('selectFacultad').value;
-                        item.departamento = document.getElementById('selectDepto').value;
-                        item.laboratorio = document.getElementById('selectLab').value;
-                        item.ubicacion = document.getElementById('selectUbicacion').value;
-                    }
-                } else if (!reintento) {
-                    // CASO NUEVO: Lo que ya tenías (crear objeto desde cero)
+                if (!reintento) {
                     item = {
                         id: Date.now(),
                         nombre: "BUSCANDO...",
                         cas: cas,
-                        // ... (el resto de tus campos iguales) ...
-                        facultad: document.getElementById('selectFacultad').value,
-                        departamento: document.getElementById('selectDepto').value,
+                        ref: "",
+                        facultad: document.getElementById('selectFacultad').value,     // Añadir esta línea
+                        departamento: document.getElementById('selectDepto').value,    // Añadir esta línea
                         laboratorio: document.getElementById('selectLab').value,
                         ubicacion: document.getElementById('selectUbicacion').value,
                         fallido: false,
@@ -1247,11 +1078,10 @@
                         cad_mes: "01",
                         cad_anio: "2026",
                         observaciones: "",
-                        ficha_url: ""
+                        ficha_url: "" // Nuevo campo para la ficha automática
                     };
                     inventario.unshift(item);
                 } else {
-                    // REINTENTO: Lo que ya tenías
                     item = inventario.find(x => x.cas === cas);
                     item.nombre = "REINTENTANDO...";
                     item.fallido = false;
@@ -1265,24 +1095,6 @@
 
                 actualizarStorage();
                 render();
-
-                // Si estábamos editando, guardamos en Firebase y reseteamos el botón
-                if (esEdicion && idEdicion) {
-                    try {
-                        await db.ref('inventario/' + idEdicion).update(item);
-
-                        // Limpiamos el botón para que vuelva a ser el escáner
-                        btnGuardar.dataset.mode = 'add';
-                        btnGuardar.dataset.id = '';
-                        btnGuardar.innerHTML = '<span style="font-size: 2.8rem;">📷</span> <span>SCAN</span>';
-                        btnGuardar.style.backgroundColor = "";
-                        btnGuardar.onclick = toggleScanner; // Devolvemos la función de la cámara
-
-                        alert("✅ Cambios guardados en la nube");
-                    } catch (e) {
-                        console.error("Error al sincronizar:", e);
-                    }
-                }
             }
 
             function render() {
