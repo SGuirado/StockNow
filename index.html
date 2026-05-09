@@ -837,6 +837,9 @@
                 <button class="search-trigger" onclick="abrirBuscador()"
                     style="font-size: 2.8rem; background: none; border: none; cursor: pointer;">🔍</button>
 
+                <button onclick="abrirEditorListas()" title="Editar Desplegables"
+                    style="font-size: 2.8rem; background: none; border: none; cursor: pointer;">✏️</button>
+
                 <button onclick="exportarCSV()" title="Exportar CSV"
                     style="background:none; border:none; font-size: 2.8rem; cursor:pointer; padding: 0;">
                     💾
@@ -859,35 +862,18 @@
             <div style="width: 50%; min-width: 280px; display: flex; flex-direction: column; gap: 10px;">
 
                 <div class="input-with-btn">
-                    <select id="selectFacultad" onchange="render()">
-                        <option>Ciencias</option>
-                        <option>Escuela Industriales</option>
+                    <select id="selectFacultad" class="form-select">
                     </select>
-                    <button onclick="agregarOpcion('selectFacultad', 'Facultad')"
-                        class="btn-system btn-nueva">+</button>
                 </div>
 
                 <div class="input-with-btn">
-                    <select id="selectDepto" onchange="render()">
-                        <option>Química Analítica</option>
-                        <option>Química Física</option>
-                        <option>Química Inorgánica</option>
-                        <option>Química Orgánica</option>
-                        <option>Bioquímica</option>
-                        <option>Física</option>
-                        <option>Ingeniería Química</option>
+                    <select id="selectDepto" class="form-select">
                     </select>
-                    <button onclick="agregarOpcion('selectDepto', 'Departamento')"
-                        class="btn-system btn-nueva">+</button>
                 </div>
 
                 <div class="input-with-btn">
-                    <select id="selectLab" onchange="render()">
-                        <option>Laboratorio Alumnos</option>
-                        <option>Investigación 1</option>
-                        <option>Investigación 2</option>
+                    <select id="selectLab" class="form-select">
                     </select>
-                    <button onclick="agregarOpcion('selectLab', 'Laboratorio')" class="btn-system btn-nueva">+</button>
                 </div>
 
             </div>
@@ -902,23 +888,14 @@
 
             <div class="input-with-btn"
                 style="display: flex; justify-content: center; gap: 10px; width: 50%; margin-bottom: 10px;">
-                <select id="selectUbicacion"
-                    style="width: 50%; min-width: 280px; display: flex; flex-direction: column; gap: 10px;">
-                    <option>Armario A1</option>
-                    <option>Armario A2</option>
+                <select id="selectUbicacion" class="form-select">
                 </select>
-                <button onclick="agregarOpcion('selectUbicacion', 'Ubicación')" class="btn-system btn-nueva">+</button>
             </div>
 
             <div class="input-with-btn"
                 style="display: flex; justify-content: center; gap: 10px; width: 50%; margin-bottom: 10px;">
-                <select id="selectEstante"
-                    style="width: 50%; min-width: 280px; display: flex; flex-direction: column; gap: 10px;">
-                    <option value="Estante 1">Estante 1</option>
-                    <option value="Estante 2">Estante 2</option>
-                    <option value="Estante 3">Estante 3</option>
+                <select id="selectEstante" class="form-select">
                 </select>
-                <button onclick="agregarOpcion('selectEstante', 'Estante')" class="btn-system btn-nueva">+</button>
             </div>
 
         </div>
@@ -976,22 +953,124 @@
             firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
 
+            // Escuchar cambios en la base de datos en tiempo real
+            // --- SISTEMA DE LISTAS REFORZADO ---
+            // Definimos siempre las categorías que DEBEN existir
+            const categoriasMaestras = ["Facultad", "Departamento", "Laboratorio", "Ubicacion", "Estante"];
+
+            let listasConfig = {
+                Facultad: [], Departamento: [], Laboratorio: [], Ubicacion: [], Estante: []
+            };
+
+            // Escuchar cambios en la base de datos
+            db.ref('configuracion/listas').on('value', (snapshot) => {
+                const data = snapshot.val() || {}; // Si no hay nada, usamos un objeto vacío
+
+                // REFUERZO: Nos aseguramos de que aunque Firebase no las devuelva, 
+                // las categorías existan en nuestro código como listas vacías
+                categoriasMaestras.forEach(cat => {
+                    listasConfig[cat] = data[cat] || [];
+                });
+
+                actualizarTodosLosSelectores();
+
+                // Si el editor está abierto, lo refrescamos
+                if (document.getElementById('modalEditorListas').style.display === 'flex') {
+                    renderizarEditorListas();
+                }
+            });
+
+            function guardarListasEnFirebase() {
+                db.ref('configuracion/listas').set(listasConfig);
+            }
+
+            function actualizarTodosLosSelectores() {
+                const mapeo = {
+                    Facultad: ['selectFacultad', 'editFacultad'],
+                    Departamento: ['selectDepto', 'editDepto'],
+                    Laboratorio: ['selectLab', 'editLab'],
+                    Ubicacion: ['selectUbicacion', 'editUbicacion'],
+                    Estante: ['selectEstante', 'editEstante']
+                };
+
+                for (let categoria in mapeo) {
+                    mapeo[categoria].forEach(idSelect => {
+                        const selectEl = document.getElementById(idSelect);
+                        if (selectEl) {
+                            const valorPrevio = selectEl.value;
+                            selectEl.innerHTML = '<option value="">Seleccionar...</option>';
+                            if (listasConfig[categoria]) {
+                                listasConfig[categoria].forEach(opcion => {
+                                    const opt = document.createElement('option');
+                                    opt.value = opcion;
+                                    opt.text = opcion;
+                                    selectEl.add(opt);
+                                });
+                            }
+                            if (valorPrevio) selectEl.value = valorPrevio;
+                        }
+                    });
+                }
+            }
+
+            // Funciones para el Modal del Lápiz
+            function abrirEditorListas() {
+                document.getElementById('modalEditorListas').style.display = 'flex';
+                renderizarEditorListas();
+            }
+
+            function cerrarEditorListas() {
+                document.getElementById('modalEditorListas').style.display = 'none';
+            }
+
+            function renderizarEditorListas() {
+                const contenedor = document.getElementById('contenidoEditorListas');
+                let html = '';
+                for (let categoria in listasConfig) {
+                    html += `<div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    <h4 style="margin: 0 0 5px 0; color: var(--primary);">${categoria}</h4>
+                    <div style="display:flex; gap:5px; margin-bottom:10px;">
+                        <input type="text" id="nuevo-${categoria}" placeholder="Añadir a ${categoria}..." style="flex:1; padding:8px;">
+                        <button onclick="agregarItemLista('${categoria}')" style="background:var(--primary); color:white; border:none; padding:0 15px; border-radius:5px; cursor:pointer;">+</button>
+                    </div>
+                    <ul style="list-style:none; padding:0; margin:0;">`;
+
+                    if (listasConfig[categoria]) {
+                        listasConfig[categoria].forEach((item, index) => {
+                            html += `<li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#f8fafc; padding:8px; border-radius:6px;">
+                            <span>${item}</span>
+                            <button onclick="borrarItemLista('${categoria}', ${index})" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                         </li>`;
+                        });
+                    }
+                    html += `</ul></div>`;
+                }
+                contenedor.innerHTML = html;
+            }
+
+            function agregarItemLista(categoria) {
+                const input = document.getElementById(`nuevo-${categoria}`);
+                const valor = input.value.trim();
+                if (valor) {
+                    if (!listasConfig[categoria]) listasConfig[categoria] = [];
+                    listasConfig[categoria].push(valor);
+                    guardarListasEnFirebase();
+                    input.value = '';
+                }
+            }
+
+            function borrarItemLista(categoria, index) {
+                if (confirm("¿Eliminar esta opción de la base de datos?")) {
+                    listasConfig[categoria].splice(index, 1);
+                    guardarListasEnFirebase();
+                }
+            }
 
             let inventario = JSON.parse(localStorage.getItem('lab_inv_v5')) || [];
             let isScanning = false;
             let videoStream = null;
             let worker = null;
             let isProcessing = false;
-
-            // Función genérica para añadir opciones a cualquier desplegable
-            function agregarOpcion(idSelect, nombreCampo) {
-                const n = prompt("Nuevo " + nombreCampo + ":");
-                if (n) {
-                    const s = document.getElementById(idSelect);
-                    const o = document.createElement('option');
-                    o.text = n; s.add(o); s.value = n;
-                }
-            }
 
             // Funciones para el nuevo modal manual
             function abrirModalManual() {
@@ -1055,7 +1134,8 @@
                     const { data: { text } } = await worker.recognize(canvas);
                     const match = text.match(/(\d{2,7}-\d{2}-\d)/);
                     if (match) {
-                        const yaExiste = inventario.some(item => item.cas === cas);
+                        const detectedCas = match[1]; // Guardar el match en una constante
+                        const yaExiste = inventario.some(item => item.cas === detectedCas);
                         if (!yaExiste) {
                             isProcessing = true;
 
@@ -1230,9 +1310,7 @@
                 localStorage.setItem('lab_inv_v5', JSON.stringify(inventario));
 
                 // 2. Envía TODO el inventario a Firebase
-                db.ref('inventario').set(inventario)
-                    .then(() => console.log("Sincronizado con Firebase"))
-                    .catch(e => console.error("Error Firebase:", e));
+                db.ref('inventario/' + item.id).update(item);
             }
 
             async function agregarCasManual() {
@@ -1674,6 +1752,19 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div id="modalEditorListas"
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center;">
+            <div class="modal-content"
+                style="max-width: 450px; width:90%; max-height: 80vh; background:white; border-radius:15px; display:flex; flex-direction:column; padding: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <h3 style="margin:0; color:var(--primary);">✏️ Configurar Listas</h3>
+                    <button onclick="cerrarEditorListas()"
+                        style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖️</button>
+                </div>
+                <div id="contenidoEditorListas" style="overflow-y:auto; flex:1;"></div>
             </div>
         </div>
 
