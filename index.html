@@ -1016,7 +1016,13 @@
                         document.getElementById('video-container').style.display = 'block';
                         btn.innerText = "⏹️ DETENER"; btn.classList.add('active');
                         isScanning = true;
-                        if (!worker) worker = await Tesseract.createWorker('eng');
+                        if (!worker) {
+                            worker = await Tesseract.createWorker('eng');
+                            // Esto obliga al escáner a ser mucho más preciso con los números CAS
+                            await worker.setParameters({
+                                tessedit_char_whitelist: '0123456789-',
+                            });
+                        }
                         cicloEscaneo();
                     } catch (e) { alert("Error de cámara"); }
                 } else { detenerEscaneo(); }
@@ -1045,8 +1051,8 @@
                     const { data: { text } } = await worker.recognize(canvas);
                     const match = text.match(/(\d{2,7}-\d{2}-\d)/);
                     if (match) {
-                        const cas = match[1].trim();
-                        if (!inventario.length || inventario[0].cas !== cas) {
+                        const yaExiste = inventario.some(item => item.cas === cas);
+                        if (!yaExiste) {
                             isProcessing = true;
 
                             // EFECTO VISUAL DE DESTELLO
@@ -1230,7 +1236,7 @@
                 const cas = input.value.trim();
 
                 // Validar formato básico de CAS (números y guiones)
-                const casRegex = /^(\d{2,7}-\d{2}-\d)$/;
+                const casRegex = /\b\d{2,7}-\d{2}-\d{1}\b/;
                 if (casRegex.test(cas)) {
                     input.value = ""; // Limpiar campo
                     await procesarNuevoReactivo(cas);
@@ -1411,7 +1417,7 @@
                         valorA = (a.nombre || "").toLowerCase();
                         valorB = (b.nombre || "").toLowerCase();
                     } else if (columna === 'cad') {
-                        // Esto asegura que ordene por fecha real
+                        // Genera un número comparable: 202505 (Mayo 2025)
                         valorA = parseInt((a.cad_anio || "0") + (a.cad_mes || "0").toString().padStart(2, '0'));
                         valorB = parseInt((b.cad_anio || "0") + (b.cad_mes || "0").toString().padStart(2, '0'));
                     }
@@ -1421,12 +1427,10 @@
                     return 0;
                 });
 
-                render(); // Actualiza la tabla principal
+                render(); // Actualiza la de fondo
 
-                // ESTO ES LO QUE ESTÁ FALLANDO:
-                // Debes llamar a la función de búsqueda para que lea el inventario ya ordenado
-                // Pero solo si el buscador está abierto
-                if (document.getElementById('buscadorModal').style.display === 'flex') {
+                // REVISIÓN CLAVE: Forzar el redibujado del buscador
+                if (document.getElementById('modalBuscador').style.display === 'flex') {
                     filtrarBusquedaRealTime();
                 }
             }
