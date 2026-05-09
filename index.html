@@ -900,16 +900,20 @@
             </label>
 
 
-            <div class="input-with-btn">
-                <select id="selectUbicacion" style="width: 50%;">
+            <div class="input-with-btn"
+                style="display: flex; justify-content: center; gap: 10px; width: 20%; margin-bottom: 10px;">
+                <select id="selectUbicacion"
+                    style="width: 45%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;">
                     <option>Armario A1</option>
                     <option>Armario A2</option>
                 </select>
                 <button onclick="agregarOpcion('selectUbicacion', 'Ubicación')" class="btn-system btn-nueva">+</button>
             </div>
 
-            <div class="input-with-btn">
-                <select id="selectEstante" style="width: 50%;">
+            <div class="input-with-btn"
+                style="display: flex; justify-content: center; gap: 10px; width: 20%; margin-bottom: 10px;">
+                <select id="selectEstante"
+                    style="width: 45%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1;">
                     <option value="Estante 1">Estante 1</option>
                     <option value="Estante 2">Estante 2</option>
                     <option value="Estante 3">Estante 3</option>
@@ -1170,9 +1174,9 @@
 
                 const inventarioFiltrado = inventario.filter(r => {
                     if (mostrarTodo) return true;
-                    const coincideFacultad = !r.facultad || r.facultad === filtroFacultad;
-                    const coincideDepto = !r.departamento || r.departamento === filtroDepto;
-                    const coincideLab = !r.laboratorio || r.laboratorio === filtroLab;
+                    const coincideFacultad = !filtroFacultad || (r.facultad || "") === filtroFacultad;
+                    const coincideDepto = !filtroDepto || (r.departamento || "") === filtroDepto;
+                    const coincideLab = !filtroLab || (r.laboratorio || "") === filtroLab;
                     return coincideFacultad && coincideDepto && coincideLab;
                 });
 
@@ -1659,7 +1663,8 @@
                                 <tr style="font-size: 0.85rem; color: #64748b; text-align: left;">
                                     <th style="padding: 10px; width: 60px; text-align: center;">Info</th>
                                     <th onclick="ordenarPor('nombre')"
-                                        style="padding: 10px; width: 85px; cursor: pointer;">Reactivo / Stock</th>
+                                        style="padding: 10px; width: 85px; cursor: pointer;">
+                                        Reactivo / Stock</th>
                                     <th onclick="ordenarPor('cad')" style="padding: 10px; cursor: pointer;">Caducidad
                                     </th>
                                 </tr>
