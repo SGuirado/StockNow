@@ -7,6 +7,7 @@
     <title>TraceReagents</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             /* Colores Universidad de Málaga */
@@ -832,7 +833,7 @@
                 <button onclick="abrirEditorListas()" title="Editar Desplegables"
                     style="font-size: 2.8rem; background: none; border: none; cursor: pointer;">🖊️</button>
 
-                <button onclick="exportarCSV()" title="Exportar CSV"
+                <button onclick="exportarCSV()" title="Exportar a Excel"
                     style="background:none; border:none; font-size: 2.8rem; cursor:pointer; padding: 0;">
                     <img src="export-excel.png" class="icono-png">
                 </button>
@@ -1363,33 +1364,52 @@
             }
 
             function exportarCSV() {
-                let csv = "\uFEFFNombre del Producto,CAS,Ubicación,Cantidad,Unidad,Fecha Caducidad,Ficha Seguridad,Observaciones\n";
-                inventario.forEach(r => {
-                    const obs = (r.observaciones || "").replace(/\n/g, " ");
-                    const ficha = r.ficha_url || "No disponible";
-                    csv += `"${r.nombre}","${r.cas}","${r.ubicacion}","${r.cantidad}","${r.unidad}","${r.cad_mes}/${r.cad_anio}","${ficha}","${obs}"\n`;
-                });
+                if (inventario.length === 0) {
+                    alert("No hay datos para exportar");
+                    return;
+                }
 
-                // 3. Generar nombre de archivo con fecha y hora actual
+                // 1. Mapeamos los datos para que las columnas tengan nombres elegantes en el Excel
+                const datosExcel = inventario.map(r => ({
+                    "Nombre del Producto": r.nombre,
+                    "CAS": r.cas,
+                    "Ubicación": r.ubicacion,
+                    "Cantidad": r.cantidad,
+                    "Unidad": r.unidad,
+                    "Fecha Caducidad": `${r.cad_mes}/${r.cad_anio}`,
+                    "Ficha Seguridad": r.ficha_url || "No disponible",
+                    "Observaciones": (r.observaciones || "").replace(/\n/g, " ")
+                }));
+
+                // 2. Crear el libro de trabajo (Workbook) y la hoja (Worksheet)
+                const hoja = XLSX.utils.json_to_sheet(datosExcel);
+                const libro = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(libro, hoja, "Inventario");
+
+                // 3. Definir anchos de columna para que sea de "Fácil Lectura"
+                // wch es el número de caracteres de ancho
+                hoja['!cols'] = [
+                    { wch: 35 }, // Nombre
+                    { wch: 15 }, // CAS
+                    { wch: 25 }, // Ubicación
+                    { wch: 10 }, // Cantidad
+                    { wch: 10 }, // Unidad
+                    { wch: 15 }, // Fecha Caducidad
+                    { wch: 30 }, // Ficha Seguridad
+                    { wch: 40 }  // Observaciones
+                ];
+
+                // 4. Generar nombre de archivo (manteniendo tu formato original)
                 const ahora = new Date();
-                const isoFecha = ahora.toISOString().split('T')[0]; // YYYY-MM-DD
+                const isoFecha = ahora.toISOString().split('T')[0];
                 const hora = ahora.getHours().toString().padStart(2, '0') + "-" +
                     ahora.getMinutes().toString().padStart(2, '0');
 
-                const nombreArchivo = `TraceReagents_${isoFecha}_${hora}.csv`;
+                // Cambiamos la extensión a .xlsx para que Excel lo abra perfecto
+                const nombreArchivo = `TraceReagents_${isoFecha}_${hora}.xlsx`;
 
-                // 4. Proceso de descarga profesional
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                if (link.download !== undefined) {
-                    const url = URL.createObjectURL(blob);
-                    link.setAttribute("href", url);
-                    link.setAttribute("download", nombreArchivo);
-                    link.style.visibility = 'hidden';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }
+                // 5. Exportar el archivo
+                XLSX.writeFile(libro, nombreArchivo);
             }
 
             let editandoId = null;
