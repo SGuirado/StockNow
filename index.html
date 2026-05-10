@@ -1514,28 +1514,31 @@
                     }
                 }
 
-                // 2. CONTROL DEL LÁPIZ JUNTO A LA X
+                // 2. ACTIVAR EL LÁPIZ QUE ESTÁ JUNTO A LA "X" (Fuera del contenido dinámico)
                 const btnEditar = document.getElementById('btnEditarFicha');
                 if (btnEditar) {
                     if (puedeEditar) {
                         btnEditar.style.display = 'inline-block';
-                        btnEditar.onclick = function () {
+                        // Esta es la clave: le asignamos la función de abrir el editor
+                        btnEditar.onclick = () => {
                             document.getElementById('modalFicha').style.display = 'none';
-                            editarReactivo(id); // Asegúrate de que esta función existe
+                            if (typeof editarReactivo === 'function') {
+                                editarReactivo(r.id);
+                            } else {
+                                console.error("La función editarReactivo no existe");
+                            }
                         };
                     } else {
                         btnEditar.style.display = 'none';
                     }
                 }
 
-                // 3. CONTENIDO DE LA FICHA (Ya sin el lápiz aquí dentro)
                 const contenido = document.getElementById('contenidoFicha');
+                // 3. PINTAMOS EL CONTENIDO (Sin el lápiz aquí dentro para evitar errores)
                 contenido.innerHTML = `
         <div class="ficha-header">
-            <div>
-                <h2 style="margin:0; color:var(--primary);">${r.nombre}</h2>
-                <code style="background:#f1f5f9; padding:2px 5px; border-radius:4px;">CAS: ${r.cas}</code>
-            </div>
+            <h2 style="margin:0; color:var(--primary);">${r.nombre}</h2>
+            <code style="background:#f1f5f9; padding:2px 5px; border-radius:4px;">CAS: ${r.cas}</code>
         </div>
         <div class="ficha-dato"><span class="ficha-label">Facultad</span><span class="ficha-valor">${r.facultad || '-'}</span></div>
         <div class="ficha-dato"><span class="ficha-label">Departamento</span><span class="ficha-valor">${r.departamento || '-'}</span></div>
@@ -1548,9 +1551,9 @@
         <div class="ficha-dato"><span class="ficha-label">Notas</span><span class="ficha-valor">${r.observaciones || 'Sin notas'}</span></div>
     `;
 
-                // Al final de la función verFicha:
+                // IMPORTANTE: Forzamos el display flex para que el modal se centre y estire
                 const modal = document.getElementById('modalFicha');
-                modal.style.display = 'flex'; // Esto lo centra gracias al align-items:center del HTML
+                modal.style.display = 'flex';
             }
 
             function abrirEditorDesdeFicha() {
@@ -1813,7 +1816,7 @@
                     <h3 style="margin:0; color:var(--primary); font-size: 1.2rem;">Detalles del Reactivo</h3>
                     <div style="display:flex; align-items:center;">
                         <span id="btnEditarFicha"
-                            style="display:none; cursor:pointer; font-size:1.6rem; margin-right: 15px; line-height: 1;">🖊️</span>
+                            style="display:none; cursor:pointer; font-size:1.8rem; margin-right: 15px; line-height: 1;">🖊️</span>
                         <button onclick="document.getElementById('modalFicha').style.display='none'"
                             style="background:none; border:none; font-size:1.8rem; cursor:pointer; color: #64748b; line-height: 1;">✖️</button>
                     </div>
