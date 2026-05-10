@@ -811,6 +811,8 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
 </head>
 
@@ -838,16 +840,20 @@
                     <img src="export-excel.png" class="icono-png">
                 </button>
 
-                <button class="btn-login" onclick="alert('Próximamente: Gestión de usuarios')"
-                    style="display: flex; align-items: center; gap: 3px; padding: 8px 15px; border-radius: 20px;">
-                    <img src="login.jpg" alt="User" style="width: 55px; height: 55px; border-radius: 50%;">
-                    <span>Iniciar sesión</span>
-                </button>
+                <div style="display: flex; align-items: center;">
+                    <button id="login-btn" class="btn-login" onclick="iniciarSesion()"
+                        style="display: flex; align-items: center; gap: 3px; padding: 8px 15px; border-radius: 20px; cursor: pointer;">
+                        <img src="login.jpg" alt="User" style="width: 55px; height: 55px; border-radius: 50%;">
+                        <span id="user-info">Iniciar sesión</span>
+                    </button>
+
+                    <button id="logout-btn" onclick="cerrarSesion()"
+                        style="display:none; background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; margin-left: 10px;">
+                        Salir
+                    </button>
+                </div>
             </div>
         </div>
-
-
-
 
         <div class="multilab-panel"
             style="display: flex; flex-direction: column; gap: 12px; align-items: center; margin-bottom: 20px;">
@@ -1006,6 +1012,7 @@
                 }
             }
 
+
             // Funciones para el Modal del Lápiz
             function abrirEditorListas() {
                 document.getElementById('modalEditorListas').style.display = 'flex';
@@ -1083,6 +1090,63 @@
                 }
             }
 
+            // Variable para guardar los permisos del técnico que ha entrado
+            // 1. Declaramos la variable de permisos 
+            let datosUsuarioActual = null;
+
+            // 2. Función para abrir Google
+            function iniciarSesion() {
+                alert("¡El botón funciona y llama a la función!"); // <--- AÑADE ESTO
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({ hd: 'uma.es' });
+                firebase.auth().signInWithPopup(provider).catch(err => console.error(err));
+            }
+
+            // 3. Función para salir
+            function cerrarSesion() {
+                firebase.auth().signOut();
+            }
+
+            // 4. El Vigilante (Comprueba si entras o sales)
+            firebase.auth().onAuthStateChanged((user) => {
+                const loginBtn = document.getElementById('login-btn');
+                const logoutBtn = document.getElementById('logout-btn');
+                const userInfo = document.getElementById('user-info');
+
+                if (user) {
+                    // CORRECCIÓN: Usamos firebase.firestore() directamente para no chocar con tu 'db'
+                    firebase.firestore().collection("usuarios").doc(user.email).get().then((doc) => {
+                        if (doc.exists) {
+                            datosUsuarioActual = doc.data();
+                        } else {
+                            datosUsuarioActual = { rol: "lector" };
+                        }
+
+                        if (logoutBtn) logoutBtn.style.display = 'inline';
+                        if (userInfo) userInfo.innerText = user.displayName.split(' ')[0];
+
+                        // CORRECCIÓN: Llamamos a TU función para actualizar la pantalla
+                        render();
+                    }).catch(err => console.error("Error permisos:", err));
+                } else {
+                    datosUsuarioActual = null;
+                    if (logoutBtn) logoutBtn.style.display = 'none';
+                    if (userInfo) userInfo.innerText = "Iniciar sesión";
+
+                    // CORRECCIÓN: Llamamos a TU función
+                    render();
+                }
+            });
+
+            // 5. Función Juez para decidir quién ve los botones de edición
+            function puedeEditar(reactivo) {
+                if (!datosUsuarioActual) return false;
+                return (
+                    datosUsuarioActual.facultad === reactivo.facultad &&
+                    datosUsuarioActual.departamento === reactivo.departamento &&
+                    datosUsuarioActual.laboratorio === reactivo.laboratorio
+                );
+            }
 
             async function toggleScanner() {
                 const btn = document.getElementById('start-btn');
@@ -1688,6 +1752,10 @@
                     document.getElementById('modalEdicion').style.display = 'none';
                 }
             }
+
+
+
+
 
         </script>
 
