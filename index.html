@@ -1502,13 +1502,30 @@
                 if (!r) return;
                 editandoId = id;
 
+                // 1. COMPROBACIÓN DE PERMISOS (Igual que en la tabla)
+                let puedeEditar = false;
+                if (typeof datosUsuarioActual !== 'undefined' && datosUsuarioActual) {
+                    if (datosUsuarioActual.rol === "admin") {
+                        puedeEditar = true;
+                    } else if (
+                        datosUsuarioActual.facultad && r.facultad && datosUsuarioActual.facultad === r.facultad &&
+                        datosUsuarioActual.departamento && r.departamento && datosUsuarioActual.departamento === r.departamento &&
+                        datosUsuarioActual.laboratorio && r.laboratorio && datosUsuarioActual.laboratorio === r.laboratorio
+                    ) {
+                        puedeEditar = true;
+                    }
+                }
+
                 const contenido = document.getElementById('contenidoFicha');
+
+                // 2. Insertamos el HTML incluyendo el lápiz SOLO si puedeEditar es true
                 contenido.innerHTML = `
-        <div class="ficha-header">
+        <div class="ficha-header" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h2 style="margin:0; color:var(--primary);">${r.nombre}</h2>
                 <code style="background:#f1f5f9; padding:2px 5px; border-radius:4px;">CAS: ${r.cas}</code>
             </div>
+            ${puedeEditar ? `<span onclick="cerrarFicha(); editarReactivo(${r.id})" style="cursor:pointer; font-size:1.5rem; padding: 5px;">✏️</span>` : ''}
         </div>
         <div class="ficha-dato"><span class="ficha-label">Facultad</span><span class="ficha-valor">${r.facultad || '-'}</span></div>
         <div class="ficha-dato"><span class="ficha-label">Departamento</span><span class="ficha-valor">${r.departamento || '-'}</span></div>
@@ -1782,7 +1799,6 @@
             style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2500; align-items:center; justify-content:center;">
             <div class="modal-content" style="max-width: 550px;">
                 <div class="ficha-top-actions">
-                    <button class="btn-icon-top" onclick="abrirEditorDesdeFicha()" title="Editar">🖊️</button>
                     <button class="btn-icon-top" onclick="document.getElementById('modalFicha').style.display='none'"
                         title="Cerrar" style="color: #d91d1d;">✖️</button>
                 </div>
