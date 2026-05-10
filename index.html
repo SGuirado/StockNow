@@ -1097,7 +1097,9 @@
             // 2. Función para abrir Google
             function iniciarSesion() {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                provider.setCustomParameters({ hd: 'uma.es' });
+                // Quitamos temporalmente la restricción de la UMA porque su servidor nos bloquea
+                // provider.setCustomParameters({ hd: 'uma.es' }); 
+
                 firebase.auth().signInWithPopup(provider).catch(err => console.error(err));
             }
 
