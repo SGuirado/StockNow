@@ -1520,7 +1520,6 @@
                     if (puedeEditar) {
                         btnEditar.style.display = 'inline-block';
                         btnEditar.onclick = function () {
-                            // ¡AQUÍ ESTABA EL FALLO! La función correcta de tu código es abrirEditor()
                             abrirEditor();
                         };
                     } else {
@@ -1528,11 +1527,11 @@
                     }
                 }
 
-                // 3. PINTAR EL CONTENIDO CON EL CAS DEBAJO DEL NOMBRE
+                // 3. PINTAR EL CONTENIDO FORZANDO LA COLUMNA (CAS DEBAJO)
                 const contenido = document.getElementById('contenidoFicha');
                 contenido.innerHTML = `
-        <div class="ficha-header" style="margin-bottom: 20px;">
-            <h2 style="margin:0; color:var(--primary); line-height: 1.2;">${r.nombre}</h2>
+        <div class="ficha-header" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px;">
+            <h2 style="margin:0; color:var(--primary); line-height: 1.2; text-align: left;">${r.nombre}</h2>
             <div style="margin-top: 8px;">
                 <code style="background:#f1f5f9; padding:4px 8px; border-radius:4px; font-size: 0.95rem; color: #475569; display: inline-block;">CAS: ${r.cas}</code>
             </div>
