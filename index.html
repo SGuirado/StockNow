@@ -840,7 +840,7 @@
                     <img src="export-excel.png" class="icono-png">
                 </button>
 
-                <div style="display: flex; align-items: center;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                     <button id="login-btn" class="btn-login" onclick="iniciarSesion()"
                         style="display: flex; align-items: center; gap: 3px; padding: 8px 15px; border-radius: 20px; cursor: pointer;">
                         <img src="login.jpg" alt="User" style="width: 55px; height: 55px; border-radius: 50%;">
@@ -848,7 +848,7 @@
                     </button>
 
                     <button id="logout-btn" onclick="cerrarSesion()"
-                        style="display:none; background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; margin-left: 10px;">
+                        style="display:none; background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">
                         Salir
                     </button>
                 </div>
@@ -1500,7 +1500,7 @@
                 if (!r) return;
                 editandoId = id;
 
-                // 1. COMPROBACIÓN ESTRICTA DE PERMISOS
+                // 1. COMPROBACIÓN DE PERMISOS
                 let puedeEditar = false;
                 if (typeof datosUsuarioActual !== 'undefined' && datosUsuarioActual) {
                     if (datosUsuarioActual.rol === "admin") {
@@ -1514,22 +1514,21 @@
                     }
                 }
 
-                // 2. GESTIONAMOS EL LÁPIZ JUNTO A LA "X"
+                // 2. CONTROL DEL LÁPIZ JUNTO A LA X
                 const btnEditar = document.getElementById('btnEditarFicha');
                 if (btnEditar) {
                     if (puedeEditar) {
-                        btnEditar.style.display = 'inline'; // Lo mostramos
-                        // Le damos vida directamente al botón (sin fallos de innerHTML)
-                        btnEditar.onclick = () => {
-                            document.getElementById('modalFicha').style.display = 'none'; // Cerramos la ficha
-                            editarReactivo(r.id); // Abrimos el editor
+                        btnEditar.style.display = 'inline-block';
+                        btnEditar.onclick = function () {
+                            document.getElementById('modalFicha').style.display = 'none';
+                            editarReactivo(id); // Asegúrate de que esta función existe
                         };
                     } else {
-                        btnEditar.style.display = 'none'; // Lo ocultamos
+                        btnEditar.style.display = 'none';
                     }
                 }
 
-                // 3. PINTAMOS LA FICHA (Ya sin el lápiz aquí dentro)
+                // 3. CONTENIDO DE LA FICHA (Ya sin el lápiz aquí dentro)
                 const contenido = document.getElementById('contenidoFicha');
                 contenido.innerHTML = `
         <div class="ficha-header">
@@ -1549,7 +1548,9 @@
         <div class="ficha-dato"><span class="ficha-label">Notas</span><span class="ficha-valor">${r.observaciones || 'Sin notas'}</span></div>
     `;
 
-                document.getElementById('modalFicha').style.display = 'flex';
+                // Al final de la función verFicha:
+                const modal = document.getElementById('modalFicha');
+                modal.style.display = 'flex'; // Esto lo centra gracias al align-items:center del HTML
             }
 
             function abrirEditorDesdeFicha() {
@@ -1805,20 +1806,20 @@
 
         <div id="modalFicha"
             style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2500; align-items:center; justify-content:center;">
-            <div class="modal-content" style="max-width: 550px;">
-                <div class="ficha-top-actions">
+            <div class="modal-content"
+                style="background:white; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; border-radius:15px; padding: 20px; position:relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
 
-                    <div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 15px;">
+                    <h3 style="margin:0; color:var(--primary); font-size: 1.2rem;">Detalles del Reactivo</h3>
+                    <div style="display:flex; align-items:center;">
                         <span id="btnEditarFicha"
-                            style="display:none; cursor:pointer; font-size:1.5rem; margin-right: 15px;"
-                            title="Editar reactivo">🖊️</span>
-                        <button class="btn-icon-top"
-                            onclick="document.getElementById('modalFicha').style.display='none'" title="Cerrar"
-                            style="color: #d91d1d;">✖️</button>
+                            style="display:none; cursor:pointer; font-size:1.6rem; margin-right: 15px; line-height: 1;">🖊️</span>
+                        <button onclick="document.getElementById('modalFicha').style.display='none'"
+                            style="background:none; border:none; font-size:1.8rem; cursor:pointer; color: #64748b; line-height: 1;">✖️</button>
                     </div>
+                </div>
 
-                    <div id="contenidoFicha" class="ficha-detalle">
-                    </div>
+                <div id="contenidoFicha">
                 </div>
             </div>
 
