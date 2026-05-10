@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TraceReagents</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         :root {
             /* Colores Universidad de Málaga */
@@ -225,40 +226,24 @@
             border-bottom: 1px solid #e2e8f0;
         }
 
-        ;
-
+        /* Info (Ojo) */
         th:nth-child(1),
         td:nth-child(1) {
             width: 50px;
             text-align: center;
         }
 
-        /* Info (Ojo) */
+        /* Reactivo */
         th:nth-child(2),
         td:nth-child(2) {
             width: auto;
         }
 
-        /* Reactivo */
+        /* CAD-Ubicación */
         th:nth-child(3),
         td:nth-child(3) {
             width: 75px;
         }
-
-        /* Ubicación */
-        th:nth-child(4),
-        td:nth-child(4) {
-            width: 55px;
-            text-align: center;
-        }
-
-        /* Stock */
-        th:nth-child(5),
-        td:nth-child(5) {
-            width: 85px;
-        }
-
-        /* Ref/Cad */
 
         th {
             background: #f8fafc;
@@ -549,8 +534,6 @@
             /* Asegúrate de que esté por encima de todo */
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            /* Nivel alto */
         }
 
         /* La caja blanca del buscador */
@@ -774,7 +757,16 @@
             /* Nivel más alto para que tape al buscador */
         }
 
-
+        .icono-png {
+            width: 55px;
+            /* Ancho del icono */
+            height: 55px;
+            /* Alto del icono */
+            vertical-align: middle;
+            /* Para que quede centrado si hay texto al lado */
+            object-fit: contain;
+            /* Evita que la imagen se deforme o se estire */
+        }
 
         /* Resaltado del ojo al pasar el cursor */
         .col-view:hover {
@@ -838,11 +830,11 @@
                     style="font-size: 2.8rem; background: none; border: none; cursor: pointer;">🔍</button>
 
                 <button onclick="abrirEditorListas()" title="Editar Desplegables"
-                    style="font-size: 2.8rem; background: none; border: none; cursor: pointer;">✏️</button>
+                    style="font-size: 2.8rem; background: none; border: none; cursor: pointer;">🖊️</button>
 
                 <button onclick="exportarCSV()" title="Exportar CSV"
                     style="background:none; border:none; font-size: 2.8rem; cursor:pointer; padding: 0;">
-                    💾
+                    <img src="export-excel.png" class="icono-png">
                 </button>
 
                 <button class="btn-login" onclick="alert('Próximamente: Gestión de usuarios')"
@@ -1384,7 +1376,7 @@
                 const hora = ahora.getHours().toString().padStart(2, '0') + "-" +
                     ahora.getMinutes().toString().padStart(2, '0');
 
-                const nombreArchivo = `StockNow_${isoFecha}_${hora}.csv`;
+                const nombreArchivo = `TraceReagents_${isoFecha}_${hora}.csv`;
 
                 // 4. Proceso de descarga profesional
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1683,7 +1675,7 @@
             style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2500; align-items:center; justify-content:center;">
             <div class="modal-content" style="max-width: 550px;">
                 <div class="ficha-top-actions">
-                    <button class="btn-icon-top" onclick="abrirEditorDesdeFicha()" title="Editar">✏️</button>
+                    <button class="btn-icon-top" onclick="abrirEditorDesdeFicha()" title="Editar">🖊️</button>
                     <button class="btn-icon-top" onclick="document.getElementById('modalFicha').style.display='none'"
                         title="Cerrar" style="color: #d91d1d;">✖️</button>
                 </div>
@@ -1834,7 +1826,7 @@
             <div class="modal-content"
                 style="max-width: 450px; width:90%; max-height: 80vh; background:white; border-radius:15px; display:flex; flex-direction:column; padding: 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                    <h3 style="margin:0; color:var(--primary);">✏️ Configurar Listas</h3>
+                    <h3 style="margin:0; color:var(--primary);">🖊️ Configurar Listas</h3>
                     <button onclick="cerrarEditorListas()"
                         style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖️</button>
                 </div>
