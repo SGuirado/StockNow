@@ -1096,7 +1096,6 @@
 
             // 2. Función para abrir Google
             function iniciarSesion() {
-                alert("¡El botón funciona y llama a la función!"); // <--- AÑADE ESTO
                 const provider = new firebase.auth.GoogleAuthProvider();
                 provider.setCustomParameters({ hd: 'uma.es' });
                 firebase.auth().signInWithPopup(provider).catch(err => console.error(err));
