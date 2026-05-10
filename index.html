@@ -1365,10 +1365,28 @@
                     const esCaducado = (parseInt(r.cad_anio) < anioActual) ||
                         (parseInt(r.cad_anio) === anioActual && parseInt(r.cad_mes) < mesActual);
 
+                    // --- COMPROBACIÓN ESTRICTA DE PERMISOS ---
+                    let puedeEditar = false;
+                    if (typeof datosUsuarioActual !== 'undefined' && datosUsuarioActual) {
+                        if (datosUsuarioActual.rol === "admin") {
+                            puedeEditar = true;
+                        } else if (
+                            datosUsuarioActual.facultad && r.facultad && datosUsuarioActual.facultad === r.facultad &&
+                            datosUsuarioActual.departamento && r.departamento && datosUsuarioActual.departamento === r.departamento &&
+                            datosUsuarioActual.laboratorio && r.laboratorio && datosUsuarioActual.laboratorio === r.laboratorio
+                        ) {
+                            puedeEditar = true;
+                        }
+                    }
+                    // ------------------------------------------
+
                     return `
 <tr style="border-bottom: 1px solid #e2e8f0;">
     <td style="text-align: center; padding: 10px 5px;">
         <span onclick="verFicha(${r.id})" style="cursor:pointer; font-size:1.2rem;">👁️</span>
+        
+        ${puedeEditar ? `<span onclick="editarReactivo(${r.id})" style="cursor:pointer; font-size:1.2rem; margin-left:4px;">✏️</span>` : ''}
+        
         ${r.ficha_url ? `<span onclick="window.open('${r.ficha_url}','_blank')" style="cursor:pointer; font-size:1rem; margin-left:4px;">📋</span>` : ''}
         ${(r.fallido || r.nombre.includes("BUSCANDO") || r.nombre === r.cas)
                             ? `<span onclick="procesarNuevoReactivo('${r.cas}', true)" style="cursor:pointer; font-size:1rem; margin-left:4px;">⚠️</span>` : ''}
