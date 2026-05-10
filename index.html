@@ -1071,6 +1071,7 @@
             let videoStream = null;
             let worker = null;
             let isProcessing = false;
+            let infoId = null;
 
             // Funciones para el nuevo modal manual
             function abrirModalManual() {
@@ -1429,10 +1430,17 @@
             }
 
             function abrirEditorDesdeFicha() {
+                // 1. Cerramos la ventana de la ficha (el ojo)
                 document.getElementById('modalFicha').style.display = 'none';
-                // Aquí llamamos a tu antigua función de cargar los inputs del modal de edición
-                prepararEditor(editandoId);
-                document.getElementById('modalEdicion').style.display = 'flex';
+
+                // 2. Comprobamos por seguridad que tenemos un ID guardado
+                if (editandoId) {
+                    // 3. Llamamos a tu función para rellenar los datos del modal de edición
+                    prepararEditor(editandoId);
+
+                    // 4. Hacemos visible la ventana de edición
+                    document.getElementById('modalEdicion').style.display = 'flex';
+                }
             }
 
             function cerrarModal() {
@@ -1464,7 +1472,7 @@
                 document.getElementById('editStock').value = r.stock || "1";
                 document.getElementById('editObs').value = r.observaciones || "";
                 document.getElementById('editFicha').value = r.ficha_url || "";
-                document.getElementById('editCas').value = item.cas;
+                document.getElementById('editCas').value = r.cas;
 
                 // Configurar años en el selector de caducidad
                 const anioSel = document.getElementById('editAnio');
