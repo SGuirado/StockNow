@@ -862,17 +862,17 @@
             <div style="width: 50%; min-width: 280px; display: flex; flex-direction: column; gap: 10px;">
 
                 <div class="input-with-btn">
-                    <select id="selectFacultad" class="form-select">
+                    <select id="selectFacultad" class="form-select" onchange="render()">
                     </select>
                 </div>
 
                 <div class="input-with-btn">
-                    <select id="selectDepto" class="form-select">
+                    <select id="selectDepto" class="form-select" onchange="render()">
                     </select>
                 </div>
 
                 <div class="input-with-btn">
-                    <select id="selectLab" class="form-select">
+                    <select id="selectLab" class="form-select" onchange="render()">
                     </select>
                 </div>
 
@@ -1066,7 +1066,7 @@
                 }
             }
 
-            let inventario = JSON.parse(localStorage.getItem('lab_inv_v5')) || [];
+            let inventario = [];
             let isScanning = false;
             let videoStream = null;
             let worker = null;
@@ -1201,43 +1201,70 @@
                 }
             }
 
-            // Nueva versión de procesarNuevoReactivo
             async function procesarNuevoReactivo(cas, reintento = false) {
                 let item;
+
+                // 1. CREAMOS EL REACTIVO TEMPORAL
                 if (!reintento) {
                     item = {
                         id: Date.now(),
                         nombre: "BUSCANDO...",
                         cas: cas,
                         ref: "",
-                        facultad: document.getElementById('selectFacultad').value,     // Añadir esta línea
-                        departamento: document.getElementById('selectDepto').value,    // Añadir esta línea
-                        laboratorio: document.getElementById('selectLab').value,
-                        ubicacion: document.getElementById('selectUbicacion').value,
-                        estante: document.getElementById('selectEstante').value,
+                        facultad: document.getElementById('selectFacultad') ? document.getElementById('selectFacultad').value : "",
+                        departamento: document.getElementById('selectDepto') ? document.getElementById('selectDepto').value : "",
+                        laboratorio: document.getElementById('selectLab') ? document.getElementById('selectLab').value : "",
+                        ubicacion: document.getElementById('selectUbicacion') ? document.getElementById('selectUbicacion').value : "",
+                        estante: document.getElementById('selectEstante') ? document.getElementById('selectEstante').value : "",
                         fallido: false,
                         cantidad: "250",
                         unidad: "g",
                         cad_mes: "01",
                         cad_anio: "2026",
                         observaciones: "",
-                        ficha_url: "" // Nuevo campo para la ficha automática
+                        ficha_url: ""
                     };
                     inventario.unshift(item);
                 } else {
                     item = inventario.find(x => x.cas === cas);
-                    item.nombre = "REINTENTANDO...";
-                    item.fallido = false;
+                    if (item) {
+                        item.nombre = "REINTENTANDO...";
+                        item.fallido = false;
+                    }
                 }
+
+                // Dibujamos la tabla para que se vea el "BUSCANDO..."
                 render();
 
+                // 2. VAMOS A INTERNET A POR LOS DATOS
                 const datos = await obtenerDatosQuimicos(cas);
-                item.nombre = datos.nombre;
-                item.ficha_url = datos.ficha;
-                item.fallido = datos.nombre === "NO ENCONTRADO";
 
-                actualizarStorage();
+                // Guardamos el nombre real en nuestro 'item'
+                if (item) {
+                    item.nombre = datos.nombre;
+                    item.ficha_url = datos.ficha;
+                    item.fallido = datos.nombre === "NO ENCONTRADO";
+                }
+
+                // 3. GUARDAMOS EN BASE DE DATOS Y REDIBUJAMOS LA TABLA
+                // Usamos 'try' para que, si el guardado da un error, el código no se rompa
+                try {
+                    if (typeof actualizarStorage === 'function') {
+                        actualizarStorage();
+                    }
+                } catch (error) {
+                    console.warn("Aviso al guardar:", error);
+                }
+
+                // ESTA ES LA LÍNEA CRÍTICA: Volvemos a dibujar la tabla principal con el nombre real
                 render();
+
+                // EXTRA: Si tenías la ventana de la Lupa (buscador) abierta, actualizamos su tabla también
+                if (typeof realizarBusqueda === 'function') {
+                    try {
+                        realizarBusqueda();
+                    } catch (e) { }
+                }
             }
 
             function render() {
@@ -1306,11 +1333,12 @@
             }
 
             function actualizarStorage() {
-                // 1. Guarda en el móvil (por si no hay internet)
-                localStorage.setItem('lab_inv_v5', JSON.stringify(inventario));
+                // 1. Lo seguimos guardando en el navegador por si te quedas sin internet un momento
+                localStorage.setItem('trace_reagents_inv', JSON.stringify(inventario));
 
-                // 2. Envía TODO el inventario a Firebase
-                db.ref('inventario/' + item.id).update(item);
+                // 2. ¡LO GRABAMOS EN LA BASE DE DATOS!
+                // Esto hace que el cambio sea permanente en la nube
+                db.ref('inventario').set(inventario);
             }
 
             async function agregarCasManual() {
@@ -1518,11 +1546,13 @@
             }
 
 
-            // Este código hace que la pantalla se actualice sola cuando el móvil envía algo
+            // Escuchamos la base de datos: cada vez que algo cambie en la nube, la tabla se actualiza sola
             db.ref('inventario').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    inventario = data;
+                const datosNube = snapshot.val();
+                if (datosNube) {
+                    // Actualizamos nuestra lista local con lo que hay en la base de datos
+                    inventario = datosNube;
+                    // Dibujamos la tabla con los datos frescos
                     render();
                 }
             });
