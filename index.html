@@ -1464,6 +1464,7 @@
                 document.getElementById('editStock').value = r.stock || "1";
                 document.getElementById('editObs').value = r.observaciones || "";
                 document.getElementById('editFicha').value = r.ficha_url || "";
+                document.getElementById('editCas').value = item.cas;
 
                 // Configurar años en el selector de caducidad
                 const anioSel = document.getElementById('editAnio');
@@ -1483,6 +1484,10 @@
                 const r = inventario.find(x => x.id === editandoId);
                 if (!r) return; // Seguridad por si no encuentra el ID
 
+                // --- NUEVO: Recogemos el valor del CAS y vemos si lo has modificado ---
+                const nuevoCas = document.getElementById('editCas') ? document.getElementById('editCas').value.trim() : r.cas;
+                const casHaCambiado = (r.cas !== nuevoCas);
+
                 // 2. Recogemos el valor de la nueva referencia
                 const refVal = document.getElementById('editRef').value;
 
@@ -1491,15 +1496,16 @@
                 r.departamento = document.getElementById('editDepto').value;
                 r.laboratorio = document.getElementById('editLab').value;
 
-                r.ref = refVal; // <--- NUEVO: Guardamos la referencia (Na25, K101, etc.)
+                r.cas = nuevoCas; // <--- NUEVO: Actualizamos el CAS con lo que hayas escrito
+                r.ref = refVal;
                 r.nombre = document.getElementById('editNombre').value.toUpperCase();
                 r.ubicacion = document.getElementById('editUbicacion').value;
                 r.estante = document.getElementById('editEstante').value;
 
                 // 4. Guardamos Tamaño y Stock
-                r.cantidad = document.getElementById('editCant').value; // Tamaño numérico
-                r.unidad = document.getElementById('editUnidad').value;  // Unidad (mL, g, etc)
-                r.stock = document.getElementById('editStock').value;   // Cantidad de botes
+                r.cantidad = document.getElementById('editCant').value;
+                r.unidad = document.getElementById('editUnidad').value;
+                r.stock = document.getElementById('editStock').value;
 
                 // 5. Datos de caducidad y otros
                 r.cad_mes = document.getElementById('editMes').value;
@@ -1507,16 +1513,28 @@
                 r.observaciones = document.getElementById('editObs').value;
                 r.ficha_url = document.getElementById('editFicha').value;
 
-                // 6. Lógica de PubChem (reintentar nombre si estaba fallido)
-                if (r.nombre.includes("BUSCANDO") || r.nombre === r.cas) {
+                // 6. Lógica de PubChem: Se activa si falló antes O SI EL CAS HA CAMBIADO
+                if (casHaCambiado || r.nombre.includes("BUSCANDO") || r.nombre === r.cas) {
+
+                    if (casHaCambiado) {
+                        r.nombre = "ACTUALIZANDO...";
+                        render(); // Damos un pequeño parpadeo a la tabla para que sepas que está trabajando
+                    }
+
                     const datos = await obtenerDatosQuimicos(r.cas);
                     r.nombre = datos.nombre;
                     if (datos.ficha) r.ficha_url = datos.ficha;
                 }
 
                 // 7. Finalizar: Guardar, Refrescar tabla y Cerrar Modal
-                actualizarStorage(); // Asegúrate de que tu función se llame así o saveStorage()
+                actualizarStorage();
                 render();
+
+                // NUEVO: Si la lupa (buscador) estaba abierta, actualizamos su tabla para que veas el cambio ahí también
+                if (typeof realizarBusqueda === 'function') {
+                    try { realizarBusqueda(); } catch (e) { }
+                }
+
                 document.getElementById('modalEdicion').style.display = 'none';
             }
 
@@ -1692,6 +1710,10 @@
 
                 <label>Referencia Interna (Ref):</label>
                 <input type="text" id="editRef" placeholder="Ej: Na25, K10...">
+
+                <label style="display:block; margin-bottom:5px; font-weight:bold; color:var(--primary);">CAS:</label>
+                <input type="text" id="editCas"
+                    style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;">
 
                 <label>Nombre del Producto:</label>
                 <input type="text" id="editNombre">
