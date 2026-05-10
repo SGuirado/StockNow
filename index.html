@@ -1385,8 +1385,6 @@
     <td style="text-align: center; padding: 10px 5px;">
         <span onclick="verFicha(${r.id})" style="cursor:pointer; font-size:1.2rem;">👁️</span>
         
-        ${puedeEditar ? `<span onclick="editarReactivo(${r.id})" style="cursor:pointer; font-size:1.2rem; margin-left:4px;">✏️</span>` : ''}
-        
         ${r.ficha_url ? `<span onclick="window.open('${r.ficha_url}','_blank')" style="cursor:pointer; font-size:1rem; margin-left:4px;">📋</span>` : ''}
         ${(r.fallido || r.nombre.includes("BUSCANDO") || r.nombre === r.cas)
                             ? `<span onclick="procesarNuevoReactivo('${r.cas}', true)" style="cursor:pointer; font-size:1rem; margin-left:4px;">⚠️</span>` : ''}
@@ -1502,7 +1500,7 @@
                 if (!r) return;
                 editandoId = id;
 
-                // 1. COMPROBACIÓN DE PERMISOS (Igual que en la tabla)
+                // 1. COMPROBACIÓN ESTRICTA DE PERMISOS
                 let puedeEditar = false;
                 if (typeof datosUsuarioActual !== 'undefined' && datosUsuarioActual) {
                     if (datosUsuarioActual.rol === "admin") {
@@ -1516,16 +1514,29 @@
                     }
                 }
 
-                const contenido = document.getElementById('contenidoFicha');
+                // 2. GESTIONAMOS EL LÁPIZ JUNTO A LA "X"
+                const btnEditar = document.getElementById('btnEditarFicha');
+                if (btnEditar) {
+                    if (puedeEditar) {
+                        btnEditar.style.display = 'inline'; // Lo mostramos
+                        // Le damos vida directamente al botón (sin fallos de innerHTML)
+                        btnEditar.onclick = () => {
+                            document.getElementById('modalFicha').style.display = 'none'; // Cerramos la ficha
+                            editarReactivo(r.id); // Abrimos el editor
+                        };
+                    } else {
+                        btnEditar.style.display = 'none'; // Lo ocultamos
+                    }
+                }
 
-                // 2. Insertamos el HTML incluyendo el lápiz SOLO si puedeEditar es true
+                // 3. PINTAMOS LA FICHA (Ya sin el lápiz aquí dentro)
+                const contenido = document.getElementById('contenidoFicha');
                 contenido.innerHTML = `
-        <div class="ficha-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="ficha-header">
             <div>
                 <h2 style="margin:0; color:var(--primary);">${r.nombre}</h2>
                 <code style="background:#f1f5f9; padding:2px 5px; border-radius:4px;">CAS: ${r.cas}</code>
             </div>
-            ${puedeEditar ? `<span onclick="cerrarFicha(); editarReactivo(${r.id})" style="cursor:pointer; font-size:1.5rem; padding: 5px;">✏️</span>` : ''}
         </div>
         <div class="ficha-dato"><span class="ficha-label">Facultad</span><span class="ficha-valor">${r.facultad || '-'}</span></div>
         <div class="ficha-dato"><span class="ficha-label">Departamento</span><span class="ficha-valor">${r.departamento || '-'}</span></div>
@@ -1790,172 +1801,175 @@
             }
 
 
-
-
-
         </script>
 
         <div id="modalFicha"
             style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2500; align-items:center; justify-content:center;">
             <div class="modal-content" style="max-width: 550px;">
                 <div class="ficha-top-actions">
-                    <button class="btn-icon-top" onclick="document.getElementById('modalFicha').style.display='none'"
-                        title="Cerrar" style="color: #d91d1d;">✖️</button>
-                </div>
 
-                <div id="contenidoFicha" class="ficha-detalle">
-                </div>
-            </div>
-        </div>
+                    <div>
+                        <span id="btnEditarFicha"
+                            style="display:none; cursor:pointer; font-size:1.5rem; margin-right: 15px;"
+                            title="Editar reactivo">🖊️</span>
+                        <button class="btn-icon-top"
+                            onclick="document.getElementById('modalFicha').style.display='none'" title="Cerrar"
+                            style="color: #d91d1d;">✖️</button>
+                    </div>
 
-        <div id="modalEdicion"
-            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:flex-start; justify-content:center;">
-            <div class="modal-content"
-                style="max-width: 550px; max-height: 90vh; overflow-y: auto; position: relative; padding-top: 60px; margin-top: 80px; margin-bottom: 20px;">
-
-                <div class="ficha-top-actions">
-                    <button class="btn-icon-top" onclick="confirmarBorradoDesdeFicha()" title="Eliminar">🗑️</button>
-                    <button class="btn-icon-top" onclick="guardarCambiosModal()" title="Guardar cambios">💾</button>
-                    <button class="btn-icon-top" onclick="document.getElementById('modalEdicion').style.display='none'"
-                        title="Cancelar" style="color: #d91d1d;">✖️</button>
-                </div>
-
-                <h3>📝 Editar Registro</h3>
-
-                <label>Facultad:</label>
-                <select id="editFacultad"></select>
-
-                <label>Departamento:</label>
-                <select id="editDepto"></select>
-
-                <label>Laboratorio:</label>
-                <select id="editLab"></select>
-
-                <label>Referencia Interna (Ref):</label>
-                <input type="text" id="editRef" placeholder="Ej: Na25, K10...">
-
-                <label style="display:block; margin-bottom:5px; font-weight:bold; color:var(--primary);">CAS:</label>
-                <input type="text" id="editCas"
-                    style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;">
-
-                <label>Nombre del Producto:</label>
-                <input type="text" id="editNombre">
-
-                <label>Ubicación:</label>
-                <select id="editUbicacion"></select>
-
-                <label>Estante:</label>
-                <select id="editEstante">
-                    <option value="Estante 1">Estante 1</option>
-                    <option value="Estante 2">Estante 2</option>
-                    <option value="Estante 3">Estante 3</option>
-                </select>
-
-                <label>Tamaño (Capacidad del envase):</label>
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <input type="number" id="editCant" step="any" placeholder="Ej: 500">
-                    <select id="editUnidad">
-                        <option value="mg">mg</option>
-                        <option value="g">g</option>
-                        <option value="kg">kg</option>
-                        <option value="mL">mL</option>
-                        <option value="L">L</option>
-                    </select>
-                </div>
-
-                <label>Stock (Número de botes/unidades):</label>
-                <input type="number" id="editStock" placeholder="¿Cuántos botes hay?" style="margin-bottom:15px;">
-
-                <label>Fecha de Caducidad:</label>
-                <div style="display:flex; gap:10px;">
-                    <select id="editMes">
-                        <option value="01">Ene</option>
-                        <option value="02">Feb</option>
-                        <option value="03">Mar</option>
-                        <option value="04">Abr</option>
-                        <option value="05">May</option>
-                        <option value="06">Jun</option>
-                        <option value="07">Jul</option>
-                        <option value="08">Ago</option>
-                        <option value="09">Sep</option>
-                        <option value="10">Oct</option>
-                        <option value="11">Nov</option>
-                        <option value="12">Dic</option>
-                    </select>
-                    <select id="editAnio"></select>
-                </div>
-
-                <label>Enlace Ficha de Seguridad (URL):</label>
-                <input type="url" id="editFicha" placeholder="https://pubchem.ncbi.nlm.nih.gov/...">
-
-                <label>Observaciones:</label>
-                <textarea id="editObs"
-                    style="width:100%; height:60px; border-radius:8px; border:1px solid #cbd5e1; padding:10px;"></textarea>
-
-            </div>
-        </div>
-        <div id="modalManual"
-            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center;">
-            <div class="modal-content">
-                <h3>Añadir CAS Manual</h3>
-                <input type="text" id="manualCasInput" placeholder="Ej: 64-17-5">
-                <div style="display:flex; gap:10px;">
-                    <button onclick="document.getElementById('modalManual').style.display='none'" class="btn-system"
-                        style="flex:1;">Cancelar</button>
-                    <button onclick="confirmarCasManual()" class="btn-export" style="flex:1;">AÑADIR</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="modalBuscador">
-            <div
-                style="background: white; width: 95%; max-width: 700px; height: 80vh; border-radius: 15px; display: flex; flex-direction: column; overflow: hidden;">
-                <div class="search-header"
-                    style="display: flex; align-items: center; padding: 15px; gap: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                    <input type="text" id="inputBuscadorReal" placeholder="Buscar reactivo, CAS o ubicación..."
-                        onkeyup="filtrarBusquedaRealTime()"
-                        style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none;">
-
-                    <button onclick="cerrarBuscador()"
-                        style="background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #6b21a8; font-weight: bold; padding: 0 5px;">
-                        ✕
-                    </button>
-                </div>
-
-
-                <div style="overflow-x:auto;">
-                    <div class="search-results">
-                        <table id="tablaResultadosBusqueda" style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="font-size: 0.85rem; color: #64748b; text-align: left;">
-                                    <th style="padding: 10px; width: 60px; text-align: center;">Info</th>
-                                    <th onclick="ordenarPor('nombre')"
-                                        style="padding: 10px; width: 85px; cursor: pointer;">
-                                        Reactivo / Stock</th>
-                                    <th onclick="ordenarPor('cad')" style="padding: 10px; cursor: pointer;">Caducidad
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="cuerpoResultadosBusqueda">
-                            </tbody>
-                        </table>
+                    <div id="contenidoFicha" class="ficha-detalle">
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div id="modalEditorListas"
-            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center;">
-            <div class="modal-content"
-                style="max-width: 450px; width:90%; max-height: 80vh; background:white; border-radius:15px; display:flex; flex-direction:column; padding: 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                    <h3 style="margin:0; color:var(--primary);">🖊️ Configurar Listas</h3>
-                    <button onclick="cerrarEditorListas()"
-                        style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖️</button>
+            <div id="modalEdicion"
+                style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:flex-start; justify-content:center;">
+                <div class="modal-content"
+                    style="max-width: 550px; max-height: 90vh; overflow-y: auto; position: relative; padding-top: 60px; margin-top: 80px; margin-bottom: 20px;">
+
+                    <div class="ficha-top-actions">
+                        <button class="btn-icon-top" onclick="confirmarBorradoDesdeFicha()"
+                            title="Eliminar">🗑️</button>
+                        <button class="btn-icon-top" onclick="guardarCambiosModal()" title="Guardar cambios">💾</button>
+                        <button class="btn-icon-top"
+                            onclick="document.getElementById('modalEdicion').style.display='none'" title="Cancelar"
+                            style="color: #d91d1d;">✖️</button>
+                    </div>
+
+                    <h3>📝 Editar Registro</h3>
+
+                    <label>Facultad:</label>
+                    <select id="editFacultad"></select>
+
+                    <label>Departamento:</label>
+                    <select id="editDepto"></select>
+
+                    <label>Laboratorio:</label>
+                    <select id="editLab"></select>
+
+                    <label>Referencia Interna (Ref):</label>
+                    <input type="text" id="editRef" placeholder="Ej: Na25, K10...">
+
+                    <label
+                        style="display:block; margin-bottom:5px; font-weight:bold; color:var(--primary);">CAS:</label>
+                    <input type="text" id="editCas"
+                        style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;">
+
+                    <label>Nombre del Producto:</label>
+                    <input type="text" id="editNombre">
+
+                    <label>Ubicación:</label>
+                    <select id="editUbicacion"></select>
+
+                    <label>Estante:</label>
+                    <select id="editEstante"></select>
+
+                    <label>Tamaño (Capacidad del envase):</label>
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="number" id="editCant" step="any" placeholder="Ej: 500">
+                        <select id="editUnidad">
+                            <option value="mg">mg</option>
+                            <option value="g">g</option>
+                            <option value="kg">kg</option>
+                            <option value="mL">mL</option>
+                            <option value="L">L</option>
+                        </select>
+                    </div>
+
+                    <label>Stock (Número de botes/unidades):</label>
+                    <input type="number" id="editStock" placeholder="¿Cuántos botes hay?" style="margin-bottom:15px;">
+
+                    <label>Fecha de Caducidad:</label>
+                    <div style="display:flex; gap:10px;">
+                        <select id="editMes">
+                            <option value="01">Ene</option>
+                            <option value="02">Feb</option>
+                            <option value="03">Mar</option>
+                            <option value="04">Abr</option>
+                            <option value="05">May</option>
+                            <option value="06">Jun</option>
+                            <option value="07">Jul</option>
+                            <option value="08">Ago</option>
+                            <option value="09">Sep</option>
+                            <option value="10">Oct</option>
+                            <option value="11">Nov</option>
+                            <option value="12">Dic</option>
+                        </select>
+                        <select id="editAnio"></select>
+                    </div>
+
+                    <label>Enlace Ficha de Seguridad (URL):</label>
+                    <input type="url" id="editFicha" placeholder="https://pubchem.ncbi.nlm.nih.gov/...">
+
+                    <label>Observaciones:</label>
+                    <textarea id="editObs"
+                        style="width:100%; height:60px; border-radius:8px; border:1px solid #cbd5e1; padding:10px;"></textarea>
+
                 </div>
-                <div id="contenidoEditorListas" style="overflow-y:auto; flex:1;"></div>
             </div>
-        </div>
+            <div id="modalManual"
+                style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center;">
+                <div class="modal-content">
+                    <h3>Añadir CAS Manual</h3>
+                    <input type="text" id="manualCasInput" placeholder="Ej: 64-17-5">
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="document.getElementById('modalManual').style.display='none'" class="btn-system"
+                            style="flex:1;">Cancelar</button>
+                        <button onclick="confirmarCasManual()" class="btn-export" style="flex:1;">AÑADIR</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modalBuscador">
+                <div
+                    style="background: white; width: 95%; max-width: 700px; height: 80vh; border-radius: 15px; display: flex; flex-direction: column; overflow: hidden;">
+                    <div class="search-header"
+                        style="display: flex; align-items: center; padding: 15px; gap: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                        <input type="text" id="inputBuscadorReal" placeholder="Buscar reactivo, CAS o ubicación..."
+                            onkeyup="filtrarBusquedaRealTime()"
+                            style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none;">
+
+                        <button onclick="cerrarBuscador()"
+                            style="background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #6b21a8; font-weight: bold; padding: 0 5px;">
+                            ✕
+                        </button>
+                    </div>
+
+
+                    <div style="overflow-x:auto;">
+                        <div class="search-results">
+                            <table id="tablaResultadosBusqueda" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="font-size: 0.85rem; color: #64748b; text-align: left;">
+                                        <th style="padding: 10px; width: 60px; text-align: center;">Info</th>
+                                        <th onclick="ordenarPor('nombre')"
+                                            style="padding: 10px; width: 85px; cursor: pointer;">
+                                            Reactivo / Stock</th>
+                                        <th onclick="ordenarPor('cad')" style="padding: 10px; cursor: pointer;">
+                                            Caducidad
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpoResultadosBusqueda">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modalEditorListas"
+                style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center;">
+                <div class="modal-content"
+                    style="max-width: 450px; width:90%; max-height: 80vh; background:white; border-radius:15px; display:flex; flex-direction:column; padding: 20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                        <h3 style="margin:0; color:var(--primary);">🖊️ Configurar Listas</h3>
+                        <button onclick="cerrarEditorListas()"
+                            style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✖️</button>
+                    </div>
+                    <div id="contenidoEditorListas" style="overflow-y:auto; flex:1;"></div>
+                </div>
+            </div>
 
 </body>
 
