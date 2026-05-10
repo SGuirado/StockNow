@@ -1119,6 +1119,7 @@
                 isScanning = false;
             }
 
+            let escaneoEnPausa = false;
             async function cicloEscaneo() {
                 if (!isScanning || isProcessing) { requestAnimationFrame(cicloEscaneo); return; }
                 const video = document.getElementById('video');
@@ -1150,8 +1151,21 @@
                             flashDiv.classList.add('do-flash');
                             setTimeout(() => flashDiv.classList.remove('do-flash'), 300);
 
-                            if (navigator.vibrate) navigator.vibrate(100);
-                            await procesarNuevoReactivo(detectedCas);
+                            // Si el escáner NO está en pausa, procedemos a leer
+                            if (!escaneoEnPausa) {
+                                navigator.vibrate(100);
+
+                                // 1. Ponemos el semáforo en rojo para no leer el mismo bote 50 veces por segundo
+                                escaneoEnPausa = true;
+
+                                // 2. Mandamos el dato a la tabla (¡SIN la palabra 'await'! Así la cámara sigue libre)
+                                procesarNuevoReactivo(detectedCas);
+
+                                // 3. A los 2.5 segundos, volvemos a poner el semáforo en verde para el siguiente bote
+                                setTimeout(() => {
+                                    escaneoEnPausa = false;
+                                }, 2500);
+                            }
                             setTimeout(() => { isProcessing = false; }, 3000);
                         }
                     }
