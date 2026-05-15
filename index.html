@@ -819,6 +819,25 @@
             width: 100%;
             margin-bottom: 20px;
         }
+
+        /* Estilo para que el botón del lápiz sea invisible pero reaccione al ratón */
+        .btn-icon-ficha {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon-ficha:hover {
+            transform: scale(1.2);
+            /* Crece al pasar el ratón */
+            filter: brightness(1.2);
+        }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -1524,27 +1543,14 @@
                 // 3. Configurar el botón del Lápiz
                 const btnEditar = document.getElementById('btnEditarFicha');
                 if (btnEditar) {
-                    if (puedeEditar) {
-                        btnEditar.style.display = 'inline-block';
-                        btnEditar.onclick = function () {
-                            // PRIMERO: Cerramos la ficha actual
-                            document.getElementById('modalFicha').style.display = 'none';
-
-                            // SEGUNDO: Pequeña pausa para que el navegador limpie la capa
-                            setTimeout(() => {
-                                if (typeof abrirEditorDesdeFicha === 'function') {
-                                    abrirEditorDesdeFicha();
-                                } else {
-                                    // Si la función anterior no existe, usamos la lógica directa
-                                    prepararEditor(window.editandoId);
-                                    document.getElementById('modalEdicion').style.display = 'flex';
-                                }
-                            }, 100);
-                        };
-                    } else {
-                        btnEditar.style.display = 'none';
-                    }
+                    // Aquí puedes poner tu lógica de permisos si la tienes
+                    btnEditar.style.display = 'inline-block';
+                    btnEditar.onclick = function () {
+                        // Llamamos a la función que ya tienes en tu archivo
+                        abrirEditorDesdeFicha();
+                    };
                 }
+
 
                 // 4. Pintar el contenido (Con la nueva estructura de CAS abajo)
                 const contenido = document.getElementById('contenidoFicha');
@@ -1552,17 +1558,17 @@
         <div class="ficha-header-wrapper">
             <h2 style="margin:0; color:var(--primary); line-height: 1.2; text-align: left; width: 100%;">${r.nombre}</h2>
             <span class="cas-badge">CAS: ${r.cas || 'No disponible'}</span>
-        </div>
-        <div class="ficha-dato"><span class="ficha-label">Facultad</span><span class="ficha-valor">${r.facultad || '-'}</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Departamento</span><span class="ficha-valor">${r.departamento || '-'}</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Laboratorio</span><span class="ficha-valor">${r.laboratorio || '-'}</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Ubicación</span><span class="ficha-valor">${r.ubicacion}</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Estante</span><span class="ficha-valor">${r.estante || '-'}</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Referencia</span><span class="ficha-valor" style="font-weight:bold; color:var(--primary);">${r.ref || '-'}</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Stock</span><span class="ficha-valor">${r.stock || 1} botes (${r.cantidad} ${r.unidad})</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Caducidad</span><span class="ficha-valor">${r.cad_mes}/${r.cad_anio}</span></div>
-        <div class="ficha-dato"><span class="ficha-label">Notas</span><span class="ficha-valor">${r.observaciones || 'Sin notas'}</span></div>
-    `;
+                </div>
+                <div class="ficha-dato"><span class="ficha-label">Facultad</span><span class="ficha-valor">${r.facultad || '-'}</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Departamento</span><span class="ficha-valor">${r.departamento || '-'}</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Laboratorio</span><span class="ficha-valor">${r.laboratorio || '-'}</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Ubicación</span><span class="ficha-valor">${r.ubicacion}</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Estante</span><span class="ficha-valor">${r.estante || '-'}</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Referencia</span><span class="ficha-valor" style="font-weight:bold; color:var(--primary);">${r.ref || '-'}</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Stock</span><span class="ficha-valor">${r.stock || 1} botes (${r.cantidad} ${r.unidad})</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Caducidad</span><span class="ficha-valor">${r.cad_mes}/${r.cad_anio}</span></div>
+                <div class="ficha-dato"><span class="ficha-label">Notas</span><span class="ficha-valor">${r.observaciones || 'Sin notas'}</span></div>
+            `;
 
                 document.getElementById('modalFicha').style.display = 'flex';
             }
@@ -1820,7 +1826,7 @@
         </script>
 
         <div id="modalFicha"
-            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2500; align-items:center; justify-content:center;">
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center;">
             <div class="modal-content"
                 style="background:white; width:95%; max-width:500px; border-radius:15px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
 
@@ -1829,8 +1835,8 @@
                         style="color: #64748b; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">Detalles
                         del Reactivo</span>
                     <div style="display:flex; align-items:center; gap:15px;">
-                        <span id="btnEditarFicha" style="display:none; cursor:pointer; font-size:1.8rem;"
-                            title="Editar">🖊️</span>
+                        <button id="btnEditarFicha" class="btn-icon-ficha" style="display:none;"
+                            title="Editar">🖊️</button>
                         <button onclick="document.getElementById('modalFicha').style.display='none'"
                             style="background:none; border:none; font-size:1.8rem; cursor:pointer; color: #94a3b8; line-height: 1;">✖️</button>
                     </div>
@@ -1939,7 +1945,7 @@
 
             <div id="modalBuscador">
                 <div
-                    style="background: white; width: 95%; max-width: 700px; height: 80vh; border-radius: 15px; display: flex; flex-direction: column; overflow: hidden;">
+                    style="background: white; width: 95%; max-width: 700px; height: 80vh; border-radius: 15px; z-index: 2000; display: flex; flex-direction: column; overflow: hidden;">
                     <div class="search-header"
                         style="display: flex; align-items: center; padding: 15px; gap: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                         <input type="text" id="inputBuscadorReal" placeholder="Buscar reactivo, CAS o ubicación..."
