@@ -1530,25 +1530,26 @@
                 const r = inventario.find(x => x.id === id);
                 if (!r) return;
 
-                // 1. Guardamos el ID globalmente
-                window.editandoId = id;
+                // Guardamos el ID en la variable global que ya usas
+                editandoId = id;
 
-                // 2. Comprobación de permisos (simplificada para asegurar que funcione)
-                let puedeEditar = false;
-                if (typeof datosUsuarioActual !== 'undefined' && datosUsuarioActual) {
-                    if (datosUsuarioActual.rol === "admin") puedeEditar = true;
-                    else if (datosUsuarioActual.laboratorio === r.laboratorio) puedeEditar = true;
-                }
-
-                // 3. Configurar el botón del Lápiz
+                // Configuración del botón Editar
                 const btnEditar = document.getElementById('btnEditarFicha');
                 if (btnEditar) {
-                    // Aquí puedes poner tu lógica de permisos si la tienes
-                    btnEditar.style.display = 'inline-block';
-                    btnEditar.onclick = function () {
-                        // Llamamos a la función que ya tienes en tu archivo
-                        abrirEditorDesdeFicha();
-                    };
+                    // Tu lógica de permisos
+                    let puedeEditar = (datosUsuarioActual && (datosUsuarioActual.rol === "admin" || datosUsuarioActual.laboratorio === r.laboratorio));
+
+                    if (puedeEditar) {
+                        btnEditar.style.display = 'inline-block';
+                        btnEditar.onclick = function () {
+                            // Cerramos la ficha para que no estorbe
+                            document.getElementById('modalFicha').style.display = 'none';
+                            // Llamamos a tu función de abrir editor
+                            abrirEditorDesdeFicha();
+                        };
+                    } else {
+                        btnEditar.style.display = 'none';
+                    }
                 }
 
 
